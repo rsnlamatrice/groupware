@@ -1,0 +1,63 @@
+.template-object-div {
+ 	border-color: #D8D8D8;
+    border-style: solid;
+ 	margin: 6px;
+ 	min-height: 20px;
+}
+
+.template-add-template-object {
+	position: relative;
+	background-repeat: no-repeat;
+	vertical-align:'middle';
+	line-height: 20px;
+	float: left;
+	width: 50%;
+}
+
+.template-add-template-object a{
+	margin-left: 5px;
+}
+
+.template-object-actions a{
+	padding-right: 10px;
+}
+
+
+
+.template-add-template-object .namecontainer{
+	
+}
+
+.template-add-template-object .name {	
+	overflow: hidden;
+}
+
+.template-removeDiv {
+	position: absolute;
+	line-height: 25px;
+	right: 0;
+	top: 0;
+	cursor: pointer;
+}
+
+.template-subtasksExpander {
+	float: left;    
+}
+
+.template-subtasks-div {
+	background-color: white;
+	border: 1px solid #CCCCCC;
+	margin: 6px;
+	padding-left: 30px;
+}
+
+.template-property-div{
+	border: 1px solid #CCCCCC;
+	margin: 6px;
+	padding-left: 30px;
+}
+
+.pair{
+	background-color: white;
+}
+
