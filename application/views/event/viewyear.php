@@ -248,8 +248,8 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 						<a class="internalLink" href="<?php echo $p; ?>"><?php echo $dtv_temp->format('d/m') . ' sem.' . $dtv_temp->format('W'); ?></a>
 					</span>
 				</div>
-				<div class="chead-extend x-tree-lines cell-<?=$strDate?>">
-					<img class="x-tree-ec-icon x-tree-elbow-plus" src="s.gif"/>
+				<div class="chead-extend x-tree-arrows cell-<?=$strDate?>">
+					<img class="x-tree-elbow-plus" src="s.gif"/>
 				</div>
 				<div id="allDay<?php echo $strDate ?>" class="allDayCell cell-<?php echo $strDate ?>"></div>
 
@@ -333,7 +333,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 ?>
 <div id="r-bottom" class="hrule"></div>
 
-<div id="eventowner" class="eventowner" style="z-index: 102;" onclick="og.disableEventPropagation(event) ">
+<div id="eventowner" class="eventowner" onclick="og.disableEventPropagation(event) ">
 <?php
 								$nWeek = 0;
 								$date_end_timespamp = $date_end->getTimestamp();
@@ -578,7 +578,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 			clearPaintedCells : function(){
 				og.clearPaintedCells();
 			},
-			chead_extend_onclick : function(){
+			chead_extend_onclick : function(event){
 				alert('Enlarge your column');
 			}
 		}
@@ -612,6 +612,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		
 		$(".internalLink, .chip").click(div_events.disableEventPropagation);
 		$(".chip").mouseup(div_events.clearPaintedCells);
+		$(".chead-extend").click(div_events.chead_extend_onclick);
 						
 	})();
 
@@ -759,9 +760,11 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		table-layout: fixed; width: 100%; height: 100%;
 	}
 	#r-bottom {
-		top: <?php echo $grid_height?>px; height:0px; z-index:1; position:absolute; left:0px;border-top:1px solid #D3D3D3;;width:100%;
+		top: <?php echo $grid_height?>px; height:0px; z-index:1; position:absolute; left:0px;
+		border-top:1px solid #D3D3D3;;width:100%;
 	}
 	#rowheaders { top: 0pt; left: 0pt; }
+	#eventowner { z-index: 102; }
 	#allDayGrid { height: <?php echo $alldaygridHeight ?>px; margin-bottom: 5px;
 		background:#E8EEF7;margin-right:15px;
 		margin-left:<?=$members_column_width?>px;position:relative;
@@ -784,12 +787,18 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		top: 12px;
 		height: <?php echo $alldaygridHeight ?>px;
 	}
+	
 	.chead-extend {
 		width: <?php echo $week_width + 2 ?>px;
 		top: 26px;
 		position:absolute; 
 		text-align: right;
+		z-index: 121; 
 	}
+	.chead-extend > img {
+		cursor: pointer !important;
+	}
+	
 	.internalLink {
 		font-size:93%; line-height: 100%; overflow:hidden;
 	}
