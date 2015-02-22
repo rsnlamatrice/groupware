@@ -66,6 +66,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	
 	$lastday = date("t", mktime(0, 0, 0, $month, 1, $year)); // # of days in the month
 	
+	$date_request = new DateTimeValue(mktime(0, 0, 0, $month, $startday, $year));
 	$date_start = new DateTimeValue(mktime(0, 0, 0, $month, $startday, $year));
 	$date_end = clone $date_start;
 	$date_start = $date_start->add('M', 0)->setDay(1)->getMondayOfWeek(); //ED150211
@@ -140,10 +141,15 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	}
 //var_dump($date_start->format('d/m/Y'), $date_end->format('d/m/Y'), '$members', count($members), '$events', count($events),'$tmp_tasks', count($tmp_tasks), active_context_members(false));
 	
+	/*ED150212*/
+	$members_column_width = 170;
+	$date_width = 48;
+	$min_depth = 0;
+			
 	define('PX_HEIGHT', count($members) < 10 ? 68 : 42);
 	define('PIX_CELL_OVER', 2);
 	
-	$alldaygridHeight = PX_HEIGHT;
+	$allgridHeight = PX_HEIGHT;
 	$members_top = array();
 	
 	$users_array = array();
@@ -153,9 +159,6 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	foreach($companies as $company)
 		$companies_array[] = $company->getArrayInfo();
 	
-	/*ED150212*/
-	$members_column_width = 170;
-	$min_depth = 0;
 ?>
 <div id="calHiddenFields">
 	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($users_array)))) ?>"/>
@@ -197,11 +200,9 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	<tr>
 		<td class="coViewBody" style="padding:0px;height:100%;" colspan=2>
 		<div id="chrome_main2" style="width:100%; height:100%">
-		<div id="allDayGrid" class="inset grid">
+		<div id="allDayGridContainer" class="inset grid">
+		<div id="allDayGrid">
 		<?php					
-			$week_width = 48/*px*/;//100/(DateTimeValue::FormatTimeDiff($date_end, $date_start, 'd')/7);
-			//if($width_percent < 3)
-			//	$width_percent = 3;
 			$current_week_left = 0;
 			$date_end_timespamp = $date_end->getTimestamp();
 			$working_date = new DateTimeValue( $date_start->getTimestamp() );
@@ -212,23 +213,6 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 				$day_of_week = $working_date->getDayOfWeek();
 				$day_of_month = $working_date->getDay();
 				$strDate = $working_date->format(FORMAT_DATE_KEY);
-				// see what type of day it is
-				$today_text = "";			
-				if($working_date->isToday()){
-					$daytitle = 'todaylink';
-					$today_text = "Today ";
-				}else $daytitle = 'daylink';
-				
-				// if weekends override do this
-				if( !user_config_option("start_monday") AND ($day_of_week==0 OR $day_of_week==6) AND $day_of_month <= $lastday AND $day_of_month >= 1){
-					$daytype = "weekend";
-				}elseif( user_config_option("start_monday") AND ($day_of_week==5 OR $day_of_week==6) AND $day_of_month <= $lastday AND $day_of_month >= 1){
-					$daytype = "weekend";
-				}elseif($day_of_month <= $lastday AND $day_of_month >= 1){
-					$daytype = "weekday";
-				}else{
-					$daytype = "weekday_future";
-				}
 		
 				$dtv_temp = $working_date;
 				$p = get_url('event', 'viewweek', array(
@@ -248,7 +232,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 						<a class="internalLink" href="<?php echo $p; ?>"><?php echo $dtv_temp->format('d/m') . ' sem.' . $dtv_temp->format('W'); ?></a>
 					</span>
 				</div>
-				<div class="chead-extend x-tree-arrows cell-<?=$strDate?>">
+				<div class="chead-expand x-tree-arrows cell-<?=$strDate?>">
 					<img class="x-tree-elbow-plus" src="s.gif"/>
 				</div>
 				<div id="allDay<?php echo $strDate ?>" class="allDayCell cell-<?php echo $strDate ?>"></div>
@@ -257,7 +241,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		<?php
 				$dates_left[$strDate] = $current_week_left;
 				
-				$current_week_left += $week_width;
+				$current_week_left += $date_width;
 				
 				//ED150211
 				//1 week after
@@ -265,19 +249,31 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 			}
 			while($working_date->getTimestamp() <= $date_end_timespamp);
 		?>
+		
+		</div><!-- allDayGridContainer -->
+		
+		<div class="nav-btn nav-toolbar toolbar-left x-tree-arrows">
+			<div class="nav-btn btn-left">
+				<img class="x-tree-elbow-end-minus" src="s.gif"/>
+			</div>
+		</div>
+		<div class="nav-btn btn-right x-tree-arrows">
+			<img class="x-tree-elbow-end-plus" src="s.gif"/>
+		</div>
+		
 	</div>
 <?php if(true){?>
 	<div id="gridcontainer" class="toprint">	
 			<div id="calowner">  
 				<table cellspacing="0" cellpadding="0" border="0">
 					<tr>
-						<td id="rowheadcell" style="width: <?=$members_column_width?>px;">
+						<td id="rowheadcell">
 							<div id="rowheaders">										
 							<?php
 								$nMember = 0;
 								$grid_height = 0;
 									
-								// Context headers column 
+								// Members headers column 
 								foreach ($members as $memberId => $member){
 									if(!is_object($member)){
 										var_dump('$member ! object', $member);
@@ -286,7 +282,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 									if($min_depth === 0)//first
 										$min_depth = $member->getDepth();
 									$members_top['_'.$memberId] = $grid_height;
-							?>
+/* first column : members tree */			?>
 <div class="rhead" id="rhead<?php echo $memberId?>" >
 <div class="rheadtext  x-tree-lines">
 	<div style="width: <?= ($member->getDepth() - $min_depth) * 14 + 36 ?>px;">
@@ -295,12 +291,12 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		 }
 		?><img src="s.gif" class="x-tree-node-icon ico-color<?=$member->getColor()?>"/>
 	</div>
-	<div style="max-width: <?= $members_column_width - (($member->getDepth() - $min_depth) * 14 + 36) - 8 ?>px;">
-		<?php echo $member->getName() ?>
-	</div>
+	<div style="max-width: <?= $members_column_width - (($member->getDepth() - $min_depth) * 14 + 36) - 8 ?>px;"><?php
+		 echo $member->getName();
+	?></div>
 </div>
-</div>												
-								<?php
+</div>
+<?php												
 									$grid_height += PX_HEIGHT;
 									$nMember++;
 								}
@@ -309,8 +305,8 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 							</div>
 						</td>
 						<td id="gridcontainercell">
-							<?php /* event cells */
-							if(true){?>
+							<?php /* event cells */ ?>
+							<div id="gridcontainernav">
 							<div id="grid" class="grid">										
 								
 							<?php
@@ -404,8 +400,9 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 											$posHoriz = 0;
 											$canPaint = true;
 
-											$width = $week_width;
-											$left = $current_week_left + 0.25 + $cells[$parentKey] * PIX_CELL_OVER;
+											$width = $date_width;
+											$left_offset = 0.25 + $cells[$parentKey] * PIX_CELL_OVER;
+											$left = $current_week_left + $left_offset;
 											$width -= 0.5;
 											
 											$event_duration->add('s', 1);
@@ -448,24 +445,26 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 											if (strlen_utf($tipBody) > 200) $tipBody = substr_utf($tipBody, 0, strpos($tipBody, ' ', 200)) . ' ...';
 											
 											$ev_duration = DateTimeValueLib::get_time_difference($event_start->getTimestamp(), $event_duration->getTimestamp());
-											$id_suffix = "_$strDate_$parentKey"; 
-
+											$id_suffix = "_$strDate_$parentKey";
+											
+											/* TODO add description in .chip
 											?><script>
 												addTip('w_ev_div_' + '<?php echo $event->getId() . $id_suffix ?>', <?php echo json_encode(clean($event->getObjectName())) ?>
 												       , <?php echo json_encode($tipBody);?>);
 											</script>
+											<?php */?>
 <?php
 											$bold = "bold";
 											if ($event instanceof Contact || $event->getIsRead(logged_user()->getId())){
 												$bold = "normal";
 											}
 
-						?><div id="w_ev_div_<?php echo $event->getId() . $id_suffix?>" class="chip" <?php
-							?> style="top: <?php echo $top?>px; left: <?php echo $left?>px; width: <?php echo $width?>px;height:<?php echo $height ?>px;" <?php
+						?><div id="w_ev_div_<?php echo $event->getId() . $id_suffix?>" class="chip cell-<?= $strDate ?> cell-mbr<?= substr($parentKey,1) ?>" <?php
+							?> style="margin-top: <?php echo $left_offset?>px; margin-left: <?php echo $left_offset?>px;" <?php
 							?> data-date="<?=$real_start->format(FORMAT_DATE_KEY)?>" data-member="<?=$memberId?>">
 						<div class="t1 <?php echo $ws_class ?>" style="<?php echo $ws_style ?>;border-color:<?php echo $border_color ?>"></div>
 						<div class="t2 <?php echo $ws_class ?>" style="<?php echo $ws_style ?>;border-color:<?php echo $border_color ?>"></div>
-						<div id="inner_w_ev_div_<?php echo $event->getId() . $id_suffix?>" class="chipbody edit og-wsname-color-<?php echo $ws_color?>" style="height:<?php echo $height - 4 ?>px;">
+						<div id="inner_w_ev_div_<?php echo $event->getId() . $id_suffix?>" class="chipbody edit og-wsname-color-<?php echo $ws_color?>">
 						<div style="border-color:<?php echo $border_color ?>;"><?php
 							?><table style="width:100%;"><tr><td><?php
 								if (false && $event instanceof ProjectEvent) {
@@ -484,7 +483,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 									?><span name="w_ev_div_<?php echo $event->getId() . $id_suffix?>_info" style="font-weight:<?php echo $bold ?>;"><?= $label ?></span><?php
 
 									$label = $subject; 
-									?><div name="w_ev_div_<?php echo $event->getId() . $id_suffix?>_info2" style="font-size: 10px;"><?= $label ?></div><?php
+									?><div name="w_ev_div_<?php echo $event->getId() . $id_suffix?>_info2" class="cell-info2"><?= $label ?></div><?php
 								?></a>
 							<tr style="height:100%;">
 								<td style="width:100%;" colspan="2"><div style="height: <?php echo $height - PX_HEIGHT ?>px;"></div></td>
@@ -522,11 +521,11 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 								?>
 </div><!-- eventowner -->
 										</div><!-- grid -->
+										</div><!-- gridcontainernav -->
 									</td><td id="ie_scrollbar_adjust" style="width:0px;"></td>
 								</tr>
 							</table>
 						</div><!-- calowner -->
-					<?php }?>
 				</div><!-- gridcontainer -->
 			</div>
 			<?php }?>
@@ -542,25 +541,92 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 
 <script>
 	(function(){
+		/******************************************************************************************
+		 * 		http://www.hunlock.com/blogs/Totally_Pwn_CSS_with_Javascript 
+		 ******************************************************************************************/
+		function getCSSRule(ruleName, deleteFlag) {               // Return requested style obejct
+		   ruleName=ruleName.toLowerCase();                       // Convert test string to lower case.
+		   if (document.styleSheets) {                            // If browser can play with stylesheets
+		      for (var i=0; i<document.styleSheets.length; i++) { // For each stylesheet
+			 var styleSheet=document.styleSheets[i];          // Get the current Stylesheet
+			 var ii=0;                                        // Initialize subCounter.
+			 var cssRule=false;                               // Initialize cssRule. 
+			 do {                                             // For each rule in stylesheet
+			    if (styleSheet.cssRules) {                    // Browser uses cssRules?
+			       cssRule = styleSheet.cssRules[ii];         // Yes --Mozilla Style
+			    } else {                                      // Browser usses rules?
+			       cssRule = styleSheet.rules[ii];            // Yes IE style. 
+			    }                                             // End IE check.
+			    if (cssRule && cssRule.selectorText)  {       // If we found a rule...
+			       if (cssRule.selectorText.toLowerCase()==ruleName) { //  match ruleName?
+				  if (deleteFlag=='delete') {             // Yes.  Are we deleteing?
+				     if (styleSheet.cssRules) {           // Yes, deleting...
+					styleSheet.deleteRule(ii);        // Delete rule, Moz Style
+				     } else {                             // Still deleting.
+					styleSheet.removeRule(ii);        // Delete rule IE style.
+				     }                                    // End IE check.
+				     return true;                         // return true, class deleted.
+				  } else {                                // found and not deleting.
+				     return cssRule;                      // return the style object.
+				  }                                       // End delete Check
+			       }                                          // End found rule name
+			    }                                             // end found cssRule
+			    ii++;                                         // Increment sub-counter
+			 } while (cssRule)                                // end While loop
+		      }                                                   // end For loop
+		   }                                                      // end styleSheet ability check
+		   return false;                                          // we found NOTHING!
+		}                                                         // end getCSSRule 
+		
+		function killCSSRule(ruleName) {                          // Delete a CSS rule   
+		   return getCSSRule(ruleName,'delete');                  // just call getCSSRule w/delete flag.
+		}                                                         // end killCSSRule
+		
+		function addCSSRule(ruleName, styles) {                           // Create a new css rule
+		   if (document.styleSheets) {                            // Can browser do styleSheets?
+			var cssRule = getCSSRule(ruleName);
+			if (cssRule)	                        	// if rule does exist...
+				return cssRule;
+			var i = 1;//document.styleSheets.length-1;		// 0 can not be used
+			 /*if (document.styleSheets[i].addRule) {           // Browser is IE?
+			    document.styleSheets[i].addRule(ruleName, null,0);      // Yes, add IE style
+			 } else { */                                        // Browser is IE?
+				if(styles === undefined)
+					styles = '';
+			    document.styleSheets[i].insertRule(ruleName+' { ' + styles + ' }', 0); // Yes, add Moz style.
+			 //}                                                // End browser check
+		   }                                                      // End browser ability check.
+		   return getCSSRule(ruleName);                           // return rule we just created.
+		} 
+		/******************************************************************************************/
+
 	<?php	/* ED150219 */
-		?>var dates = <?= json_encode($added_dates) ?>
-		, members = <?= json_encode(array_keys($members_top)) ?>
+		?>var options = {
+			dayShortNames : ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam']
+			, dates : <?= json_encode($added_dates) ?>
+			, members : <?= json_encode(array_keys($members_top)) ?>
+		}
 		<?php if (!logged_user()->isGuest()) {
-		?>, div_events = {
-			onmouseover : function(){
-				if (!og.selectingCells) og.overCell(this.id); else og.paintSelectedCells(this.id);
+		?>, methods = {
+			cell_onmouseover : function(){
+				if (!og.selectingCells) {
+					og.overCell(this.id);
+				}
+				else og.paintSelectedCells(this.id);
 			},
-			onmouseout : function(){
-				if (!og.selectingCells) og.resetCell(this.id);
+			cell_onmouseout : function(){
+				if (!og.selectingCells){
+					og.resetCell(this.id);
+				}
 			},
-			onmousedown : function(){
+			cell_onmousedown : function(){
 				var strDate = this.getAttribute('data-date');
 				og.selectStartDateTime(strDate.substring(8,2), strDate.substring(5,2), strDate.substring(0,4), 0, 0);
 				og.resetCell(this.id);
 				og.paintingDay = strDate;
 				og.paintSelectedCells(this.id);
 			},
-			onmouseup : function(){
+			cell_onmouseup : function(){
 				var strDate = this.getAttribute('data-date');
 				og.showEventPopup(strDate.substring(8,2), strDate.substring(5,2), strDate.substring(0,4), 0, 0, <?php echo ($use_24_hours ? 'true' : 'false'); ?>
 				     , strDate, '<?php echo $genid?>'
@@ -578,41 +644,222 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 			clearPaintedCells : function(){
 				og.clearPaintedCells();
 			},
-			chead_extend_onclick : function(event){
-				alert('Enlarge your column');
+			get_date : function($cell){
+				var className = $cell.attr('class');
+				var regex = /^.*(\bcell-(\d{4}-\d{2}-\d{2})).*$/;
+				if(regex.test(className))
+					return className.replace(regex, '$2');
+				return false;
+			},
+			/* expands a week as 7 day columns */
+			chead_expand_onclick : function(event){
+				//toggle direction
+				var $img = $(this).children('img')
+				, expanding = $img[0].className.indexOf('x-tree-elbow-plus') >= 0;
+				$img[0].className = $img[0].className.replace(expanding ? 'x-tree-elbow-plus' : 'x-tree-elbow-minus', expanding ? 'x-tree-elbow-minus' : 'x-tree-elbow-plus');
+				
+				var strMonday = methods.get_date($(this))
+				, mondayDate = new Date(strMonday)
+				, mondayLabel = mondayDate.format('d/m');
+				var $headers = $('#allDayGrid')
+				, $grid = $('#grid')
+				, $grid_container_nav = $('#gridcontainernav');
+				var $column_width = $headers.find('.chead:first').width();
+				
+				if(expanding){
+					$headers.find('.cell-' + strMonday).each(function(){
+						if(this.className.indexOf('allDayCell')>=0
+						|| this.className.indexOf('chead-expand')>=0
+						|| this.id.indexOf('alldayeventowner_') == 0)
+							return;
+						var $this = $(this);
+						$this.addClass('cell-day');
+						var $insertAfter = $this;
+						for(var day = 1; day < 7; day++){
+							var dayDate = new Date(strMonday);
+							dayDate.setDate(mondayDate.getDate()+day);
+							var dayLabel = dayDate.format('d/m') + '<br>' + options.dayShortNames[dayDate.getDay()]
+							, strDate = dayDate.format('Y-m-d');
+							
+							var $clone = $this.clone();
+							$clone.addClass('cell-day');
+							if(day == 6)
+								$clone.addClass('day-sunday');
+							$clone[0].className = $clone[0].className.replace(strMonday, strDate);
+							$clone[0].id = $clone[0].id.replace(strMonday, strDate);
+							//$clone.css('left', $this.position().left + $column_width * day);
+							if($clone.hasClass('chead'))
+								$clone.find('.internalLink').html(dayLabel);
+							$clone.insertAfter($insertAfter);
+							$insertAfter = $clone;
+						}
+					});
+					
+					$grid.find('.cell-' + strMonday + ':not(.chip)').each(function(){
+						var $this = $(this);
+						$this.addClass('cell-day');
+						var $insertAfter = $this;
+						for(var day = 1; day < 7; day++){
+							var dayDate = new Date(strMonday);
+							dayDate.setDate(mondayDate.getDate()+day);
+							var strDate = dayDate.format('Y-m-d');
+							
+							var $clone = $this.clone();
+							$clone.addClass('cell-day');
+							if(day == 6)
+								$clone.addClass('day-sunday');
+							$clone[0].className = $clone[0].className.replace(strMonday, strDate);
+							$clone[0].id = $clone[0].id.replace(strMonday, strDate);
+							//$clone.css('left', $this.position().left + $column_width * day);
+							
+							if($clone.hasClass('vy-cell'))
+								$clone.css('background-color', 'none');/* due to hover */
+								
+							$clone.insertAfter($insertAfter);
+							$insertAfter = $clone;
+						}
+					});
+					//events
+					var $events = $grid.find('.chip.cell-' + strMonday + '[data-date]');
+					for(var day = 1; day < 7; day++){
+						var dayDate = new Date(strMonday);
+						dayDate.setDate(mondayDate.getDate()+day);
+						var strDate = dayDate.format('Y-m-d');
+						// Set monday class to date class
+						$events.filter('[data-date="' + strDate + '"]').each(function(){
+							this.className = this.className.replace(strMonday, strDate);
+						});
+					}
+				}
+				else { //collapse
+					$headers.find('.cell-' + strMonday + '.cell-day').removeClass('cell-day');
+					$grid.find('.cell-' + strMonday + '.cell-day').removeClass('cell-day');
+					
+					for(var day = 1; day < 7; day++){
+						var dayDate = new Date(strMonday);
+						dayDate.setDate(mondayDate.getDate()+day);
+						var strDate = dayDate.format('Y-m-d');
+						$headers.find('.cell-' + strDate).remove();
+						// Set date class to monday
+						$grid.find('.chip.cell-' + strDate).each(function(){
+							this.className = this.className.replace(strDate, strMonday);
+						});
+						$grid.find('.cell-' + strDate).remove();
+					}
+				}
+				methods.set_dates_left($('#alldaycelltitle_' + strMonday));
+				//throw "debug";
+			}, /*chead_expand_onclick*/
+			
+			
+			set_dates_left : function($left_cell){
+				var left_strDate = methods.get_date($left_cell);
+				var left = $left_cell.position().left;
+				var width = $left_cell.width();
+				var msg = '';
+				$('#allDayGrid .chead').each(function(){
+					var strDate = methods.get_date($(this));
+					if(strDate <= left_strDate)
+						return;
+					left += width;
+					var css_rule = getCSSRule('.cell-' + strDate);
+					if(css_rule)
+						killCSSRule('.cell-' + strDate);//TODO css_rule
+					css_rule = addCSSRule('.cell-' + strDate, 'left : ' + left + 'px;');
+					//msg += '.cell-' + strDate + ' { left : ' + left + 'px;}\n';
+				});
+				//msg += '.hrule { left : ' + left + 'px;}\n';
+				//alert(msg);
+			},
+			/* shows right or left hidden columns */
+			navigate : function(){
+				
+				var $headers = $('#allDayGrid')
+				, $grid = $('#grid')
+				, $grid_container_nav = $('#gridcontainernav');
+				function hide_date(strDate){
+					if(strDate.jquery)
+						strDate = methods.get_date(strDate);
+					if(!strDate){
+						throw('date inconnue');
+						return;
+					}
+					$headers.find('.cell-' + strDate).hide();
+				}
+				function show_date(strDate){
+					if(strDate.jquery)
+						strDate = methods.get_date(strDate);
+					if(!strDate){
+						throw('date inconnue');
+						return;
+					}
+					$headers.find('.cell-' + strDate).show();
+					
+				}
+				var direction = /btn-right/.test(this.className) ? 1 : -1;
+				
+				var $cell = $headers.find('.chead:visible:first');
+				if(direction < 0){
+					var $prev_cell = $cell.prevAll('.chead:first');
+					if($prev_cell.length === 0)
+						return;
+				}
+				var offset = $cell.width();
+				
+				//hrule
+				left = - $grid.position().left;
+				left += direction * offset;
+				$grid.find('.hrule').css('left', left + 'px');
+				
+				//grid
+				var left = $grid.position().left;
+				left -= direction * offset;
+				$grid.css('left', left);
+				
+				//headers
+				left = $headers.position().left;
+				left -= direction * offset;
+				$headers.css('left', left);
+				//$headers.css('width', $headers.width() + direction * offset);
+				
+				if(direction > 0)
+					hide_date($cell);
+				else 
+					show_date($prev_cell);
 			}
 		}
 		<?php } ?>
 		;
-		for(var i = 0; i < dates.length; i++){
-			var strDate = dates[i];
+		for(var i = 0; i < options.dates.length; i++){
+			var strDate = options.dates[i];
 			og.ev_cell_dates[strDate] = {day: strDate.substring(8,2), month: strDate.substring(5,2), year: strDate.substring(0,4)};
 			var ev_dropzone_allday = new Ext.dd.DropZone('alldayeventowner_' + strDate, {ddGroup:'ev_dropzone_allday'})
 			, ev_dropzone_alldaytitle = new Ext.dd.DropZone('alldaycelltitle_' + strDate, {ddGroup:'ev_dropzone_allday'});
 			
 			<?php if (!logged_user()->isGuest()) { ?>
-				document.getElementById('alldayeventowner_' + strDate).onclick = div_events.alldayeventowner_onclick;
+				document.getElementById('alldayeventowner_' + strDate).onclick = methods.alldayeventowner_onclick;
 			<?php } ?>
 				
-			for(var m = 0; m < members.length; m++){
-				var div_id = 'h' + strDate + members[m];
+			for(var m = 0; m < options.members.length; m++){
+				var div_id = 'h' + strDate + options.members[m];
 				
 				<?php if (!logged_user()->isGuest()) {
 				?>	var dom = document.getElementById(div_id);
 					dom.setAttribute('data-date', strDate);
-					dom.onmouseover = div_events.onmouseover;
-					dom.onmouseout = div_events.onmouseout;
-					dom.onmousedown = div_events.onmousedown;
-					dom.onmouseup = div_events.onmouseup;
+					dom.onmouseover = methods.cell_onmouseover;
+					dom.onmouseout = methods.cell_onmouseout;
+					dom.onmousedown = methods.cell_onmousedown;
+					dom.onmouseup = methods.cell_onmouseup;
 				<?php } ?>
 	
 				var ev_dropzone = new Ext.dd.DropZone(div_id, {ddGroup:'ev_dropzone'});
 			}
 		}
 		
-		$(".internalLink, .chip").click(div_events.disableEventPropagation);
-		$(".chip").mouseup(div_events.clearPaintedCells);
-		$(".chead-extend").click(div_events.chead_extend_onclick);
+		$(".internalLink, .chip").click(methods.disableEventPropagation);
+		$(".chip").mouseup(methods.clearPaintedCells);
+		$(".chead-expand").click(methods.chead_expand_onclick);
+		$(".nav-btn").click(methods.navigate);
 						
 	})();
 
@@ -628,7 +875,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	});
 
 	// Mantain the actual values after refresh by clicking Calendar tab.
-	var dtv = new Date('<?php echo $month.'/'.$day.'/'.$year ?>');
+	var dtv = new Date('<?php echo $date_request->format(FORMAT_DATE_KEY) ?>');
 	og.calToolbarDateMenu.picker.setValue(dtv);
 
 	if (Ext.isIE) document.getElementById('ie_scrollbar_adjust').style.width = '15px';
@@ -641,7 +888,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		} else {
 			var divHeight = maindiv.offsetHeight;
 			var tbarsh = Ext.get('calendarPanelSecondTopToolbar').getHeight() + Ext.get('calendarPanelTopToolbar').getHeight();
-			divHeight = divHeight - tbarsh - <?php echo (PX_HEIGHT + $alldaygridHeight); ?>;
+			divHeight = divHeight - tbarsh - <?php echo (PX_HEIGHT + $allgridHeight); ?>;
 			document.getElementById('gridcontainer').style.height = divHeight + 'px';
 		}
 	}
@@ -651,20 +898,8 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	} else {
 		og.addDomEventHandler(window, 'resize', resizeGridContainer);
 	}
-	
-<?php if ($drawHourLine) { ?>
-	og.preferences['start_monday'] = <?php echo json_encode(user_config_option('start_monday')) ?>;
-	og.startLocaleTime = new Date('<?php echo $today->format('m/d/Y H:i:s') ?>');
-	og.startLineTime = null;
-	if (og.preferences['start_monday'] == 1) {
-		var today_d = og.startLocaleTime.format('N') - 1;
-	} else {
-		var today_d = og.startLocaleTime.format('w');
-	}
-	og.drawCurrentHourLine(today_d, 'w_');
-<?php } ?>
 	// init tooltips
-	Ext.QuickTips.init();
+	//ED150221 Ext.QuickTips.init();
         
         Ext.extend(og.EventRelatedPopUp, Ext.Window, {
                 accept: function() {
@@ -681,7 +916,8 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 </script>
 <style>
 	.vy-cell {
-		width:<?php echo $week_width ?>px;
+		width:<?php echo $date_width ?>px;
+		max-width:<?php echo $date_width * 8 ?>px;
 		height:<?=PX_HEIGHT?>px;
 		position:absolute;
 		z-index: 90;
@@ -698,7 +934,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		position:absolute;
 		top:0%;
 		height:100%;
-		width: <?= $week_width ?>px; 
+		width: <?= $date_width ?>px; 
 	}
 	.rhead {
 		height: <?php echo PX_HEIGHT-1?>px; top: 0ex;
@@ -723,6 +959,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		height:100%; line-height: 14px;
 	}
 	#gridcontainercell {
+		height: 100%;
 		width:100%;
 		position:relative;
 	}
@@ -745,13 +982,40 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		border-top:1px dotted #DDDDDD;
 	}
 	.chip {
-		position: absolute; z-index:120;
+		position: absolute;
+		z-index: 120;
+		height: <?php echo PX_HEIGHT - 1 ?>px;
+		width:<?php echo $date_width - 0.25 ?>px;
+	}
+	.chip:hover {
+		min-width: <?php echo $date_width * 4 ?>px;
+		max-width:<?php echo $date_width * 8 ?>px;
+		height: auto;
+		z-index: 121;
+	}
+	.chipbody {
+		height: 89%;
+	}
+	.chip:hover .chipbody {
+		height: <?php echo 1.5 * PX_HEIGHT - 1 ?>px;
 	}
 	.chipbody > div {
 		overflow:hidden;height:100%;border-left: 1px solid;border-right: 1px solid;
 	}
+	.cell-info2 {
+		font-size:10px;
+	}
+	.chip:hover .cell-info2 {
+		font-size: 12px;
+		line-height: 12px;
+	}
 	#gridcontainer{
 		background-color:#fff; position:relative; overflow-x:hidden; overflow-y:scroll; height:504px;
+	}
+	#gridcontainernav {
+		position: relative;
+		overflow: hidden;
+		height: 100%;
 	}
 	#calowner{
 		display:block; width:100%;
@@ -765,9 +1029,19 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	}
 	#rowheaders { top: 0pt; left: 0pt; }
 	#eventowner { z-index: 102; }
-	#allDayGrid { height: <?php echo $alldaygridHeight ?>px; margin-bottom: 5px;
-		background:#E8EEF7;margin-right:15px;
-		margin-left:<?=$members_column_width?>px;position:relative;
+	#rowheadcell { width: <?=$members_column_width?>px; }
+	#allDayGrid {
+		height: 100%; 
+		margin-right:15px;
+		position:relative;
+		margin-left:0;
+	}
+	#allDayGridContainer{
+		background:#E8EEF7;
+		margin-left:<?=$members_column_width?>px;
+		height: 41px;
+		margin-bottom: 5px;
+		position:relative;
 	}
 	.vy-vd {
 		height: <?=$grid_height?>px;border-left:3px double #DDDDDD !important; position:absolute;
@@ -782,36 +1056,74 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		width:3px;z-index:110;background:#E8EEF7;top:0%;
 	}
 	.allDayCell + div {
-		width: <?php echo $week_width ?>px;
+		width: <?php echo $date_width ?>px;
 		position:absolute;
 		top: 12px;
-		height: <?php echo $alldaygridHeight ?>px;
+		height: 42px;
 	}
 	
-	.chead-extend {
-		width: <?php echo $week_width + 2 ?>px;
+	.chead-expand {
+		width: <?php echo $date_width + 2 ?>px;
 		top: 26px;
 		position:absolute; 
 		text-align: right;
 		z-index: 121; 
 	}
-	.chead-extend > img {
+	.chead-expand > img {
 		cursor: pointer !important;
+	}
+	
+	.nav-btn {
+		position: absolute;
+		top: 0;
+		background-color: rgb(79, 62, 62);
+		height: 42px;
+		z-index: 122;
+		width: 24px;
+		cursor: pointer;
+		opacity: 0.7;
+	}
+	.nav-btn:hover { background-color: rgb(109, 92, 92); opacity: 0.9; }
+	.nav-btn.btn-right { right: -0px; }
+	.nav-toolbar.toolbar-left {
+		left: <?= - $members_column_width - 24 ?>px;
+		width: <?=$members_column_width?>px;
+		background-position: right;
+		opacity: 1;
+		text-align: right;
+		background-color: #E8EEF7;
+		/*display: none;*/
+	}
+	.nav-btn.btn-left {
+		right: -24px;
+		opacity: 0.4;
+		/*display: none;*/
 	}
 	
 	.internalLink {
 		font-size:93%; line-height: 100%; overflow:hidden;
 	}
+	
+	.cell-day {
+		background-color: rgb(230, 211, 250);
+		opacity: 0.5;
+	}
+	.cell-day.day-sunday {
+		background-color: rgb(208, 187, 210);
+	}
 	<?php
+	
 	foreach($dates_left as $strDate => $left){
 	?> .cell-<?=$strDate?> { left: <?=$left?>px; }
-	<?php }
+<?php	 }
 	
-	?> .cell-mbr0 {	top: 0%; }<?php
+	?> .cell-mbr0 {	top: 0%; }
+<?php
 	
 	foreach($members_top as $memberId => $top){
 	?> .cell-mbr<?=substr($memberId, 1)?> {	top: <?=$top?>px; }
-	<?php }
+<?php	}
+	
 	?>
 </style>
 <?php
