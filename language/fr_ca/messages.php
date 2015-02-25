@@ -146,7 +146,7 @@
 	'success massmail' => 'Un message a été envoyé.',
 	'success update company permissions' => 'Les permissions de la société ont bien été modifiées. {0} enregistrements modifiés.',
 	'success user permissions updated' => 'Les permissions de l\'utilisateur ont été modifiées.',
-	'success add event' => 'L\'évènement {0] a été ajouté.',
+	'success add event' => 'L\'évènement {0} a été ajouté.',
 	'success edit event' => 'L\'évènement a été modifié.',
 	'success delete event' => 'L\'évènement a été supprimé.',
 	'success add event type' => 'Le type d\'évènement a été ajouté.',
