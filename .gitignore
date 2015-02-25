@@ -224,3 +224,5 @@ cache/
 *.sh
 fengoffice.sql
 *.komodoproject
+public/install
+public/upgrade
