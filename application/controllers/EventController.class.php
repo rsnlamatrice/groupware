@@ -388,7 +388,7 @@ class EventController extends ApplicationController {
 		tpl_assign('event_related', false);
 		
 		if (is_array(array_var($_POST, 'event'))) {
-			try {
+			try {				
 				$data = $this->getData($event_data);
 
 				$event->setFromAttributes($data);
@@ -402,7 +402,13 @@ class EventController extends ApplicationController {
 					$this->change_invitation_state($data['confirmAttendance'], $event->getId(), $user_filter);
 				}
 				
-				if (array_var($_POST, 'members')) {
+				/* ED150224
+				 * parent member is given
+				 */
+				if (isset($event_data['member_id']) && $event_data['member_id'] != 0) {
+					$member_ids = array($event_data['member_id']);
+				} 
+				elseif (array_var($_POST, 'members')) {
 					$member_ids = json_decode(array_var($_POST, 'members'));
 				} else {
 					$member_ids = array();
@@ -411,7 +417,6 @@ class EventController extends ApplicationController {
 						if ($selection instanceof Member) $member_ids[] = $selection->getId();
 					}
 				}
-				
 				
 				$object_controller = new ObjectController();
 				$object_controller->add_to_members($event, $member_ids);

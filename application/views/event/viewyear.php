@@ -9,8 +9,9 @@ require_javascript('og/CalendarPrint.js');
 require_javascript('og/EventRelatedPopUp.js'); 
 $genid = gen_id();
 
-$max_events_to_show = user_config_option('displayed events amount');
-if (!$max_events_to_show) $max_events_to_show = 15;
+//$max_events_to_show = user_config_option('displayed events amount');
+//if (!$max_events_to_show) $max_events_to_show = 15;
+$max_events_to_show = 999;
 ?>
 
 <script>
@@ -138,6 +139,11 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		//else
 		//	var_dump($strDate, count($dates[$strDate]['_'.$memberId]));
 		$dates[$strDate]['_'.$memberId][$eventId] = $event;
+		
+		if ($event instanceof ProjectEvent
+		&& $event->isRepetitive()) {
+			
+		}
 	}
 //var_dump($date_start->format('d/m/Y'), $date_end->format('d/m/Y'), '$members', count($members), '$events', count($events),'$tmp_tasks', count($tmp_tasks), active_context_members(false));
 	
@@ -145,6 +151,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	$members_column_width = 170;
 	$date_width = 48;
 	$min_depth = 0;
+	$max_depth = 0;
 			
 	define('PX_HEIGHT', count($members) < 10 ? 68 : 42);
 	define('PIX_CELL_OVER', 2);
@@ -256,9 +263,11 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 			<div class="nav-btn btn-left">
 				<img class="x-tree-elbow-end-minus" src="s.gif"/>
 			</div>
+			<!--div class="x-tab-scroller-left x-unselectable x-tab-scroller-left-disabled " id="ext-gen301" style="height: 30px;"></div-->
 		</div>
 		<div class="nav-btn btn-right x-tree-arrows">
 			<img class="x-tree-elbow-end-plus" src="s.gif"/>
+			<!--div class="x-tab-scroller-right x-unselectable " id="ext-gen307" style="height: 30px;"></div-->
 		</div>
 		
 	</div>
@@ -281,18 +290,20 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 									}
 									if($min_depth === 0)//first
 										$min_depth = $member->getDepth();
+									if($max_depth < $member->getDepth())
+										$max_depth = $member->getDepth();
 									$members_top['_'.$memberId] = $grid_height;
 /* first column : members tree */			?>
-<div class="rhead" id="rhead<?php echo $memberId?>" >
-<div class="rheadtext  x-tree-lines">
-	<div style="width: <?= ($member->getDepth() - $min_depth) * 14 + 36 ?>px;">
-		<?php if($member->getHasChild()){
+<div class="rhead mbr-depth<?= ($member->getDepth() - $min_depth) ?>" id="rhead<?php echo $memberId?>" >
+<div class="rheadtext x-tree-lines">
+	<div><?php 
+		if($member->getHasChild()){
 			?><img src="s.gif" class="x-tree-ec-icon x-tree-elbow-minus"/><?php
 		 }
 		?><img src="s.gif" class="x-tree-node-icon ico-color<?=$member->getColor()?>"/>
 	</div>
-	<div style="max-width: <?= $members_column_width - (($member->getDepth() - $min_depth) * 14 + 36) - 8 ?>px;"><?php
-		 echo $member->getName();
+	<div><?php
+		 echo clean($member->getName());
 	?></div>
 </div>
 </div>
@@ -367,7 +378,8 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 										$cells = array();
 										
 										$occup = array(); //keys: memberid - pos
-										foreach ($dates[$strDate] as $parentKey => $memberTasks)
+										foreach ($dates[$strDate] as $parentKey => $memberTasks){
+											$memberId = substr($parentKey, 1);
 										foreach($memberTasks as $event_id => $event){
 											
 											if(isset($cells[$parentKey]))
@@ -507,7 +519,8 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 							<?php } ?>
 						</script>
 						<?php }
-										}//foreach
+										}}//foreach
+										
 									} //if $dates[$strDate]
 
 									$nWeek++;
@@ -545,11 +558,19 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		 * 		http://www.hunlock.com/blogs/Totally_Pwn_CSS_with_Javascript 
 		 ******************************************************************************************/
 		function getCSSRule(ruleName, deleteFlag) {               // Return requested style obejct
-		   ruleName=ruleName.toLowerCase();                       // Convert test string to lower case.
 		   if (document.styleSheets) {                            // If browser can play with stylesheets
 		      for (var i=0; i<document.styleSheets.length; i++) { // For each stylesheet
 			 var styleSheet=document.styleSheets[i];          // Get the current Stylesheet
-			 var ii=0;                                        // Initialize subCounter.
+			 var cssRule=getCSSRuleInStyleSheet(ruleName, deleteFlag, styleSheet)
+			 if(cssRule) return cssRule;                      // end While loop
+		      }                                                   // end For loop
+		   }                                                      // end styleSheet ability check
+		   return false;                                          // we found NOTHING!
+		}                                                         // end getCSSRule
+		
+		function getCSSRuleInStyleSheet(ruleName, deleteFlag, styleSheet) {               // Return requested style obejct
+			ruleName=ruleName.toLowerCase();                       // Convert test string to lower case.
+			var ii=0;                                        // Initialize subCounter.
 			 var cssRule=false;                               // Initialize cssRule. 
 			 do {                                             // For each rule in stylesheet
 			    if (styleSheet.cssRules) {                    // Browser uses cssRules?
@@ -572,31 +593,35 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 			       }                                          // End found rule name
 			    }                                             // end found cssRule
 			    ii++;                                         // Increment sub-counter
-			 } while (cssRule)                                // end While loop
-		      }                                                   // end For loop
-		   }                                                      // end styleSheet ability check
+			 } while (cssRule)                                // end styleSheet ability check
 		   return false;                                          // we found NOTHING!
 		}                                                         // end getCSSRule 
 		
-		function killCSSRule(ruleName) {                          // Delete a CSS rule   
-		   return getCSSRule(ruleName,'delete');                  // just call getCSSRule w/delete flag.
+		function killCSSRule(ruleName, styleSheet) {                          // Delete a CSS rule   
+		   return getCSSRule(ruleName, 'delete', styleSheet);                  // just call getCSSRule w/delete flag.
 		}                                                         // end killCSSRule
 		
-		function addCSSRule(ruleName, styles) {                           // Create a new css rule
-		   if (document.styleSheets) {                            // Can browser do styleSheets?
+		function addCSSRule(ruleName, styles, styleSheet) {                           // Create a new css rule
+		   if (document.styleSheets) {                         // Can browser do styleSheets?
 			var cssRule = getCSSRule(ruleName);
 			if (cssRule)	                        	// if rule does exist...
 				return cssRule;
-			var i = 1;//document.styleSheets.length-1;		// 0 can not be used
-			 /*if (document.styleSheets[i].addRule) {           // Browser is IE?
-			    document.styleSheets[i].addRule(ruleName, null,0);      // Yes, add IE style
-			 } else { */                                        // Browser is IE?
-				if(styles === undefined)
-					styles = '';
-			    document.styleSheets[i].insertRule(ruleName+' { ' + styles + ' }', 0); // Yes, add Moz style.
-			 //}                                                // End browser check
+			if (!styleSheet) {
+				var i = 1;//document.styleSheets.length-1;		// 0 can not be used
+				 styleSheet = document.styleSheets[i]; // styleSheet to use.
+			}
+			if (styleSheet) {
+				/*if (styleSheet.addRule) {           // Browser is IE?
+				    styleSheet.addRule(ruleName, null,0);      // Yes, add IE style
+				 } else { */                                        // Browser is IE?
+					if(styles === undefined)
+						styles = '';
+					styleSheet.insertRule(ruleName+' { ' + styles + ' }', styleSheet.cssRules.length); // Yes, add Moz style.
+				 //}                                                // End browser check
+			}
+			
 		   }                                                      // End browser ability check.
-		   return getCSSRule(ruleName);                           // return rule we just created.
+		   return getCSSRule(ruleName, styleSheet);                           // return rule we just created.
 		} 
 		/******************************************************************************************/
 
@@ -605,6 +630,8 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 			dayShortNames : ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam']
 			, dates : <?= json_encode($added_dates) ?>
 			, members : <?= json_encode(array_keys($members_top)) ?>
+			, max_depth : <?= $max_depth - $min_depth ?>
+			, row_height: <?php echo PX_HEIGHT?>
 		}
 		<?php if (!logged_user()->isGuest()) {
 		?>, methods = {
@@ -620,22 +647,25 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 				}
 			},
 			cell_onmousedown : function(){
-				var strDate = this.getAttribute('data-date');
-				og.selectStartDateTime(strDate.substring(8,2), strDate.substring(5,2), strDate.substring(0,4), 0, 0);
+				var strDate = this.getAttribute('data-date')
+				, memberId = this.className.replace(/^.*\bcell-mbr(\d+).*$/, '$1');
+				og.selectStartDateTime(strDate.substr(8,2), strDate.substr(5,2), strDate.substr(0,4), 0, 0);
 				og.resetCell(this.id);
 				og.paintingDay = strDate;
 				og.paintSelectedCells(this.id);
+				og.currentMemberId = memberId; //ED150223
+				throw('ICIICICIC IC ICIIC');
 			},
 			cell_onmouseup : function(){
 				var strDate = this.getAttribute('data-date');
-				og.showEventPopup(strDate.substring(8,2), strDate.substring(5,2), strDate.substring(0,4), 0, 0, <?php echo ($use_24_hours ? 'true' : 'false'); ?>
-				     , strDate, '<?php echo $genid?>'
+				og.showEventPopup(strDate.substr(8,2), strDate.substr(5,2), strDate.substr(0,4), 0, 0, <?php echo ($use_24_hours ? 'true' : 'false'); ?>
+				     , strDate.substr(8,2) + '/' + strDate.substr(5,2) + '/' + strDate.substr(0,4), '<?php echo $genid?>'
 				     , '<?php echo ProjectEvents::instance()->getObjectTypeId()?>');
 			},
 			alldayeventowner_onclick : function(){
 				var strDate = this.getAttribute('data-date');
-				og.showEventPopup(strDate.substring(8,2), strDate.substring(5,2), strDate.substring(0,4), -1, -1, <?php echo ($use_24_hours ? 'true' : 'false'); ?>
-					, strDate.substring(8,2) + '/' + strDate.substring(5,2) + '/' + strDate.substring(0,4)
+				og.showEventPopup(strDate.substr(8,2), strDate.substr(5,2), strDate.substr(0,4), -1, -1, <?php echo ($use_24_hours ? 'true' : 'false'); ?>
+					, strDate.substr(8,2) + '/' + strDate.substr(5,2) + '/' + strDate.substr(0,4)
 					, '<?php echo $genid?>', '<?php echo ProjectEvents::instance()->getObjectTypeId()?>');
 			},
 			disableEventPropagation : function(){
@@ -753,24 +783,24 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 			
 			
 			set_dates_left : function($left_cell){
-				var left_strDate = methods.get_date($left_cell);
-				var left = $left_cell.position().left;
-				var width = $left_cell.width();
-				var msg = '';
+				var left_strDate = methods.get_date($left_cell)
+				, left = $left_cell.position().left
+				, width = $left_cell.width()
+				, styleSheet = false;
 				$('#allDayGrid .chead').each(function(){
 					var strDate = methods.get_date($(this));
 					if(strDate <= left_strDate)
 						return;
 					left += width;
-					var css_rule = getCSSRule('.cell-' + strDate);
-					if(css_rule)
-						killCSSRule('.cell-' + strDate);//TODO css_rule
-					css_rule = addCSSRule('.cell-' + strDate, 'left : ' + left + 'px;');
-					//msg += '.cell-' + strDate + ' { left : ' + left + 'px;}\n';
+					var css_rule = getCSSRule('.cell-' + strDate, styleSheet);
+					if(css_rule){
+						styleSheet = css_rule.parentStyleSheet;
+						killCSSRule('.cell-' + strDate, styleSheet);//TODO css_rule
+					}
+					css_rule = addCSSRule('.cell-' + strDate, 'left : ' + left + 'px;', styleSheet);
 				});
-				//msg += '.hrule { left : ' + left + 'px;}\n';
-				//alert(msg);
 			},
+			
 			/* shows right or left hidden columns */
 			navigate : function(){
 				
@@ -826,13 +856,116 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 					hide_date($cell);
 				else 
 					show_date($prev_cell);
+			},
+						
+			
+			/* Defines members top style */
+			set_members_top : function($header){
+				var height = options.row_height
+				, top = $header.position().top
+				, parentMemberId = $header[0].id.substr('rhead'.length)
+				, skip_depth = false
+				, styleSheet = false
+				;
+				$header.nextAll('.rhead').each(function(){
+					var memberId = this.id.substr('rhead'.length)
+					var css_rule = getCSSRule('.cell-mbr' + memberId, styleSheet);
+					if(css_rule){
+						styleSheet = css_rule.parentStyleSheet;
+						killCSSRule('.cell-mbr' + memberId, styleSheet);
+					}
+					if ($(this).is(':visible'))
+						top += height;
+					
+					css_rule = addCSSRule('.cell-mbr' + memberId, 'top : ' + top + 'px;', styleSheet);
+				});
+				//throw('ICI C ICI CI ');
+			},
+			
+			/* tree collapse/expand */
+			toggle_member : function(){
+				//toggle direction
+				var $img = $(this)
+				, $rhead = $img.parents('.rhead:first')
+				, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
+				, expanding = $img[0].className.indexOf('x-tree-elbow-plus') >= 0
+				, max_depth = options.max_depth
+				, $grid = $('#grid')
+				, parentMemberId = $rhead[0].id.substr('rhead'.length)
+				;
+				
+				if (expanding) {
+					var skip_depth = false;
+					$rhead.nextAll('div').each(function(){
+						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
+						if(depth <= root_depth)
+							return false; //stop looping
+						if(skip_depth && skip_depth < depth)
+							return; //next
+						if(skip_depth && skip_depth <= depth)
+							skip_depth = false;
+							
+						$(this).show();
+						var memberId = this.id.substr('rhead'.length);
+						
+						if(this.className.indexOf('tree-collapsed') >= 0){
+							skip_depth = depth;
+							return; //next
+						}
+					});
+					//reset children class
+					$grid.find('.cell-mbr' + parentMemberId).each(function(){
+						var $this = $(this);
+						if ($this.attr('data-member')) {
+							var memberId = $this.attr('data-member');
+							if(memberId == parentMemberId)
+								return;
+							//set class to set top position
+							this.className = this.className.replace(/\bcell-mbr\d+/, 'cell-mbr' + memberId);
+						}
+					});
+					$img
+						.removeClass('x-tree-elbow-plus')
+						.addClass('x-tree-elbow-minus');
+					$rhead
+						.removeClass('tree-collapsed')
+						.addClass('tree-expanded');
+				}
+				else {//collpase
+					$rhead.nextAll('div.rhead:visible').each(function(){
+						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
+						if(depth <= root_depth)
+							return false;
+						$(this).hide();
+						var memberId = this.id.substr('rhead'.length);
+						$grid.find('.cell-mbr' + memberId).each(function(){
+							var $this = $(this);
+							if (!$this.attr('data-member')) {
+								//remembers memberId
+								$this.attr('data-member', memberId);
+							}
+							//set parent class to set top position
+							this.className = this.className.replace(/\bcell-mbr\d+/, 'cell-mbr' + parentMemberId);
+						});
+					});
+					
+					$img
+						.removeClass('x-tree-elbow-minus')
+						.addClass('x-tree-elbow-plus');
+					$rhead
+						.removeClass('tree-expanded')
+						.addClass('tree-collapsed');
+				}
+				methods.set_members_top($rhead);
+				//throw('ICI C ICI CI ');
+				
 			}
 		}
 		<?php } ?>
 		;
 		for(var i = 0; i < options.dates.length; i++){
 			var strDate = options.dates[i];
-			og.ev_cell_dates[strDate] = {day: strDate.substring(8,2), month: strDate.substring(5,2), year: strDate.substring(0,4)};
+			og.ev_cell_dates[strDate] = {day: strDate.substr(8,2), month: strDate.substr(5,2), year: strDate.substr(0,4)};
 			var ev_dropzone_allday = new Ext.dd.DropZone('alldayeventowner_' + strDate, {ddGroup:'ev_dropzone_allday'})
 			, ev_dropzone_alldaytitle = new Ext.dd.DropZone('alldaycelltitle_' + strDate, {ddGroup:'ev_dropzone_allday'});
 			
@@ -860,6 +993,7 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		$(".chip").mouseup(methods.clearPaintedCells);
 		$(".chead-expand").click(methods.chead_expand_onclick);
 		$(".nav-btn").click(methods.navigate);
+		$("#rowheaders .x-tree-ec-icon.x-tree-elbow-minus, #rowheaders .x-tree-ec-icon.x-tree-elbow-plus").click(methods.toggle_member);
 						
 	})();
 
@@ -926,7 +1060,6 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 	.vy-today {
 		background-color:#efefa8;
 		opacity:0.9;
-		filter: alpha(opacity = 90);
 		z-index:0;		
 	}
 	.chead {
@@ -1112,6 +1245,11 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		background-color: rgb(208, 187, 210);
 	}
 	<?php
+	
+	for($depth = 0; $depth <= $max_depth - $min_depth; $depth++){
+	?> .mbr-depth<?=$depth?> > div > div:first-of-type { width: <?= $depth * 14 + 32 ?>px; }
+	.mbr-depth<?=$depth?> > div > div:last-of-type { max-width: <?= $members_column_width - ($depth * 14 + 32) - 8 ?>px; }
+<?php	 }
 	
 	foreach($dates_left as $strDate => $left){
 	?> .cell-<?=$strDate?> { left: <?=$left?>px; }

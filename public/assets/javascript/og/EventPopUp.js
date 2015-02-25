@@ -89,6 +89,13 @@ og.EventPopUp = function(data,config) {
 				                id: data.genid + 'ev_popup_members',
 				                value: ''
 				            },
+					    /* ED150224 */
+				            {
+				            	xtype: 'hidden',
+				                name: 'event[member_id]',
+				                id: 'member_id',
+				                value: data.member_id
+				            },
 				            {
 				            	xtype: 'hidden',
 				                name: 'event[start_day]',
@@ -175,7 +182,16 @@ Ext.extend(og.EventPopUp, Ext.Window, {
 		Ext.getCmp('durationmin').setValue(duration_split[1]);
 		
 		this.hide();
-		og.openLink(og.getUrl('event', 'add'),{post:'popup=true&event[start_day]='+Ext.getCmp('day').getValue()+'&event[start_month]='+Ext.getCmp('month').getValue()+'&event[start_year]='+Ext.getCmp('year').getValue()+'&event[hour]='+Ext.getCmp('hour').getValue()+'&event[minute]='+Ext.getCmp('min').getValue()+'&event[type_id]='+Ext.getCmp('type_id').getValue()+'&event[durationhour]='+Ext.getCmp('durationhour').getValue()+'&event[durationmin]='+Ext.getCmp('durationmin').getValue()+'&view='+Ext.getCmp('view').getValue()+'&event[start_value]='+Ext.getCmp('start_value').getValue()+'&event[start_time]='+Ext.getCmp('start_time').getValue()+'&event[name]='+Ext.getCmp('name').getValue()});
+		og.openLink(og.getUrl('event', 'add'),{post:'popup=true&event[start_day]='+Ext.getCmp('day').getValue()
+			    +'&event[start_month]='+Ext.getCmp('month').getValue()+'&event[start_year]='+Ext.getCmp('year').getValue()
+			    +'&event[hour]='+Ext.getCmp('hour').getValue()+'&event[minute]='+Ext.getCmp('min').getValue()
+			    +'&event[type_id]='+Ext.getCmp('type_id').getValue()
+			    +'&event[durationhour]='+Ext.getCmp('durationhour').getValue()
+			    +'&event[durationmin]='+Ext.getCmp('durationmin').getValue()+'&view='+Ext.getCmp('view').getValue()
+			    +'&event[start_value]='+Ext.getCmp('start_value').getValue()
+			    +'&event[start_time]='+Ext.getCmp('start_time').getValue()
+			    +'&event[name]='+Ext.getCmp('name').getValue()
+			    +'&event[member_id]='+Ext.getCmp('member_id').getValue()});
 	},
 	
 	cancel: function() {
@@ -203,6 +219,8 @@ og.EventPopUp.show = function(callback, data, scope) {
 	Ext.getCmp('view').setValue(data.view);
 	Ext.getCmp('hide_calendar_toolbar').setValue(data.hide_calendar_toolbar);
 	Ext.getCmp('duration').setValue(data.durationhour + ':' + (data.durationmin < 10 ? '0':'') + data.durationmin);
+	if (Ext.getCmp('member_id'))
+		Ext.getCmp('member_id').setValue(data.member_id);
 	this.dialog.purgeListeners();
 	this.dialog.show();
 	var pos = this.dialog.getPosition();

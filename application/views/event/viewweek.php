@@ -70,14 +70,12 @@ if (!$max_events_to_show) $max_events_to_show = 15;
     if($task_filter != "hide"){
     	$tasks = ProjectTasks::getRangeTasksByUser($date_start, $date_end, ($user_filter != -1 ? $user : null), $task_filter);
     }
-    
-	$birthdays = array();//Contacts::instance()->getRangeContactsByBirthday($date_start, $date_end, active_context_members(false));
+    	$birthdays = array();//Contacts::instance()->getRangeContactsByBirthday($date_start, $date_end, active_context_members(false));
 	
 	$tmp_tasks = array();
 	foreach ($tasks as $task) {
 		$tmp_tasks = array_merge($tmp_tasks, replicateRepetitiveTaskForCalendar($task, new DateTimeValue(mktime(0, 0, 0, $month, $startday, $year)), new DateTimeValue(mktime(0, 0, 0, $month, $endday, $year))));
-	}
-	
+	}	
 	$dates = array(); //datetimevalue for each day of week
 	$results = array();
 	$allday_events_count = array();
@@ -121,6 +119,9 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		}
 
 		$results[$day_of_week] = ProjectEvents::getDayProjectEvents($dates[$day_of_week], active_context(), $user_filter, $status_filter); 
+		
+		//var_dump($day_of_week, count($results[$day_of_week]));
+		
 		if(!$results[$day_of_week]) $results[$day_of_week]=array();
 		foreach ($results[$day_of_week] as $key => $event){
 			if ($event->getTypeId()> 1){
