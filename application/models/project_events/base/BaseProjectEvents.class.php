@@ -35,6 +35,7 @@ abstract class BaseProjectEvents extends ContentDataObjects {
     	'repeat_mjump' => DATA_TYPE_INTEGER,
         'ext_cal_id' => DATA_TYPE_INTEGER,
         'original_event_id' => DATA_TYPE_INTEGER,
+        'permission_group_id' => DATA_TYPE_INTEGER,
     );
 
     /**

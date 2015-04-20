@@ -210,11 +210,13 @@ class ProjectEvents extends BaseProjectEvents {
 		}
 		
 		$user = null;
-		if ($user_filter > 0) {
+		if($user_filter instanceof Contact)
+			$user = $user_filter;
+		else if ($user_filter > 0) {
 			$user = Contacts::findById($user_filter);
 		}
 		//ED150212 adds  $user_filter != null && 
-		if ($user_filter != null && $user_filter != -1 && !$user instanceof Contact) $user = logged_user();
+		if ($user_filter != null && $user_filter != -1 && !($user instanceof Contact)) $user = logged_user();
 
 		$invited = "";
 		if ($user instanceof Contact) {
@@ -295,6 +297,19 @@ class ProjectEvents extends BaseProjectEvents {
 			  )
 			  $invited
 			)";
+			
+		/* ED150410
+		 * filtre sur les permissions de l'utilisateur courant
+		*/
+		$conditions .= "
+		AND (permission_group_id IS NULL OR permission_group_id = 0
+			OR permission_group_id IN (
+				SELECT cp.permission_group_id
+				FROM ".TABLE_PREFIX."contact_permission_groups cp
+				WHERE cp.contact_id=".logged_user()->getId()."
+			)
+		) ";
+		//die( "<pre>$conditions</pre>" );
 		$result_events = self::instance()->listing(array(
 			"order" => 	'start',
 			"order_dir"=> 'ASC',

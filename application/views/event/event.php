@@ -167,6 +167,27 @@ if($event->isNew()) {
 
 $visible_cps = CustomProperties::countVisibleCustomPropertiesByObjectType($object->getObjectTypeId());
 
+
+
+		
+	/*ED150409*/
+	$permission_group_id = array_var($event_data, 'permission_group_id');
+	if(!$permission_group_id)
+		$permission_group_id = 0;
+	$permission_groups = ContactPermissionGroups::getPermissionGroupsByContact(logged_user()->getId());
+	$permission_groups_category = array(
+					    'name' => 'permission_group',
+					    'visible' => $permission_group_id,
+					    //'content' => ''
+					    );
+	$permission_groups_category['content'] = '<select name="event[permission_group_id]" size="1" tabindex="150" data-value="<?=$permission_group_id?>">';
+	foreach($permission_groups as $permission) {
+		$permission_groups_category['content'] .= "<option value='$permission[0]'";
+		if($permission_group_id == $permission[0]) $permission_groups_category['content'] .= ' selected="selected"';
+		$permission_groups_category['content'] .= ">".$permission[1]."</option>";
+	}
+	$permission_groups_category['content'] .= '</select>';
+
 ?>
 	<form id="<?php echo $genid ?>submit-edit-form" class="add-event" style="height:100%;background-color:white" class="internalForm" action="<?php echo $form_view_url; ?>" method="post">
 	<input type="hidden" id="event[pm]" name="event[pm]" value="<?php echo $pm?>">
@@ -194,7 +215,10 @@ $visible_cps = CustomProperties::countVisibleCustomPropertiesByObjectType($objec
 	    		array('class' => 'title', 'id' => 'eventSubject', 'tabindex' => '1', 'maxlength' => '100', 'tabindex' => '10')) ?>
 	    </div>
 	 
-	 	<?php $categories = array(); Hook::fire('object_edit_categories', $object, $categories); ?>
+	 	<?php $categories = array(); Hook::fire('object_edit_categories', $object, $categories);
+		/*ED150409*/
+		$categories[] = $permission_groups_category;
+		?>
 	 	
 	 	<div style="padding-top:5px;text-align:left;">
 		<a href="#" class="option" onclick="og.toggleAndBolden('<?php echo $genid ?>add_event_select_context_div',this)" <?php echo ($event->isNew() ? '' : '')?>><?php echo lang('context') ?></a> -
@@ -221,9 +245,15 @@ $visible_cps = CustomProperties::countVisibleCustomPropertiesByObjectType($objec
 			<fieldset>
 				<legend><?php echo lang('context') ?></legend>
 				<?php
+				 
 					$listeners = array('on_selection_change' => 'og.reload_subscribers("'.$genid.'",'.$object->manager()->getObjectTypeId().'); og.redrawPeopleList("'.$genid.'");');
 					if ($event->isNew()) {
-						render_member_selectors($event->manager()->getObjectTypeId(), $genid, null, array('select_current_context' => true, 'listeners' => $listeners));
+						$member_id = array_var($event_data, 'member_id');
+						if($member_id && $member_id != '0')
+							$active_member = array($member_id);
+						else
+							$active_member = null;
+						render_member_selectors($event->manager()->getObjectTypeId(), $genid, $active_member, array('select_current_context' => true, 'listeners' => $listeners));
 					} else {
 						render_member_selectors($event->manager()->getObjectTypeId(), $genid, $event->getMemberIds(), array('listeners' => $listeners));
 					} 
@@ -239,15 +269,13 @@ $visible_cps = CustomProperties::countVisibleCustomPropertiesByObjectType($objec
 			</fieldset>
 		</div>
 		<div id="trap3"><fieldset id="fs3" style="height:0px;border:0px;padding:0px;display:none"><span style="color:#FFFFFF;"></span></fieldset></div>
-		
 <?php 
 	$occ = array_var($event_data, 'occ'); 
 	$rsel1 = array_var($event_data, 'rsel1'); 
 	$rsel2 = array_var($event_data, 'rsel2'); 
 	$rsel3 = array_var($event_data, 'rsel3'); 
 	$rnum = array_var($event_data, 'rnum'); 
-	$rend = array_var($event_data, 'rend');?>
-		
+	$rend = array_var($event_data, 'rend'); ?>
 	<div id="<?php echo $genid ?>event_repeat_options_div" style="display:none">
 		<fieldset>
 			<legend><?php echo lang('CAL_REPEATING_EVENT')?></legend>
@@ -558,7 +586,7 @@ $visible_cps = CustomProperties::countVisibleCustomPropertiesByObjectType($objec
 	</fieldset>
 	</div>
 	<?php } ?>
-
+	
 	<input type="hidden" name="cal_origday" value="<?php echo $day?>">
 	<input type="hidden" name="cal_origmonth" value="<?php echo $month?>">
 	<input type="hidden" name="cal_origyear" value="<?php echo $year?>">

@@ -440,6 +440,41 @@
     } // setOriginalEventId()
     
     
+    
+
+    /**
+     * ED150407
+    * Return value of 'permission_group_id' field
+    *
+    * @access public
+    * @param void
+    * @return Int 
+    */
+    function getPermissionGroupId() {
+      return $this->getColumnValue('permission_group_id');
+    } //  getPermissionGroupId()
+    
+    /**
+     * ED150407
+    * Set value of 'permission_group_id' field
+    *
+    * @access public   
+    * @param Int $value
+    * @return boolean
+    */
+    function  setPermissionGroupId($value) {
+      return $this->setColumnValue('permission_group_id', $value);
+    } //  setPermissionGroupId()
+    
+    function getPermissionGroupName($contact_id = false) {
+      $id = $this->getColumnValue('permission_group_id');
+      if(!$id)
+	  return '(tous)';
+      if(!$contact_id)
+	$contact_id = logged_user()->getId();
+      return ContactPermissionGroups::getPermissionGroupName($contact_id, $id);
+    }
+    
     /**
     * Return manager instance
     *

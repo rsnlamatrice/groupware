@@ -186,6 +186,86 @@
 		
 	});
 	
+	/* year view
+	 * ED150304
+	 */
+	og.yearViewEventDD = Ext.extend(Ext.dd.DDProxy, {
+	    startDrag: function(x, y) {
+	        var dragEl = Ext.get(this.getDragEl());
+	        var el = Ext.get(this.getEl());
+
+	        dragEl.applyStyles({border:'','z-index':2000});
+	        dragEl.update(el.dom.innerHTML);
+	        dragEl.applyStyles('opacity: 0.5; filter: alpha(opacity = 50);');
+	    },
+		onDragOver: function(e, targetId) {
+			var target = Ext.get(targetId);
+			if (target) {
+				this.lastTarget = target;
+			}
+		},
+		onDragOut: function(e, targetId) {
+			var target = Ext.get(targetId);
+			if (target) {
+				this.lastTarget = target;
+			}
+	    },
+		endDrag: function() {
+			var el = Ext.get(this.getEl());
+			if(this.lastTarget) {
+				var regex = /^.*(\d{4}-\d{2}-\d{2}).*$/
+				, strDate = (this.lastTarget.dom.getAttribute('data-date') == null ? this.lastTarget.id : this.lastTarget.dom.getAttribute('data-date'))
+					.replace(regex, '$1');
+				
+				regex = /^.*(\bmbr(\d+)).*$/
+				var memberId_src = this.config.dragData.member_id
+				, memberId_dest = this.lastTarget.dom.className.replace(regex, '$2');
+				
+				var ok = true;
+				if (this.config.dragData.is_repe) {
+					ok = confirm(lang('confirm repeating event edition'));
+				}
+				if (!ok) return;
+				
+				if (memberId_src != memberId_dest) {
+					ok = confirm('Confirmez vous le changement de contexte ?');
+				}
+				if (!ok) return;
+				
+				var grid = Ext.get('grid');
+				var parent = Ext.get('eventowner');
+				
+				var lt = Ext.get(this.lastTarget);
+				var top = lt.getTop() - parent.getTop();
+				var left = 100 * (lt.getLeft() - parent.getLeft() + 3) / grid.getWidth();
+				
+				el.applyStyles('top:'+top+'px;left:'+left+'%;');				
+				parent.appendChild(el);
+				
+				/*var cont = Ext.get('gridcontainer');
+				if (cont.getTop() + cont.getHeight() < el.getTop() + el.getHeight()) {
+					style = 'height:'+ (cont.getTop() + cont.getHeight() - el.getTop() - 1) +'px';
+					el.applyStyles(style);
+					Ext.get(this.getDragEl()).update(el.dom.innerHTML);
+				}*/
+				
+				if(this.config.fn && 'function' === typeof this.config.fn) {
+					date = og.ev_cell_dates[strDate];
+					if (date) {
+						this.config.dragData.day = date.day;
+						this.config.dragData.month = date.month;
+						this.config.dragData.year = date.year;
+						this.config.dragData.member_id = memberId_dest;
+						this.config.fn.apply(this.config.scope || window, [this, this.config.dragData]);
+					} else {
+						og.err('Invalid grid cell');
+					}
+				}
+			}
+		}
+		
+	});
+	
 	og.createEventDrag = function(div_id, obj_id, is_repetitive, origdate, type, isAllday, dropzone) {
 		var obj_div = Ext.get(div_id);
 		
@@ -246,6 +326,68 @@
 				switch (type) {
 					case 'event':
 						og.openLink(og.getUrl('event', 'move_event', {id:ddata.id, year:ddata.year, month:ddata.month, day:ddata.day, hour:-1, min:-1, orig_date:ddata.orig_date}), {});
+						break;
+					case 'milestone':
+						og.openLink(og.getUrl('milestone', 'change_due_date', {id:ddata.id, year:ddata.year, month:ddata.month, day:ddata.day, hour:-1, min:-1}), {});
+						break;
+					case 'task':
+						var d_to_change = (div_id.indexOf('_end_') != -1  ? 'due' : (div_id.indexOf('_st_') != -1  ? 'start' : 'both'));
+						og.openLink(og.getUrl('task', 'change_start_due_date', {id:ddata.id, year:ddata.year, month:ddata.month, day:ddata.day, conserve_times:1, tochange:d_to_change}), {});
+						break;
+					default: break;
+				}
+			}
+		});
+	}
+	
+	/* ED150304
+	copy from createMonthlyViewDrag
+	*/
+	og.createYearViewDrag = function(div_id, obj_id, is_repetitive, origdate, type, isAllday, dropzone, member_id) {
+		var obj_div = Ext.get(div_id);
+		obj_div.dd = new og.yearViewEventDD(div_id, 'ev_dropzone', {
+			dragData: {
+				id: obj_id, is_repe: is_repetitive
+				, orig_date: origdate
+				, member_id: member_id
+			},
+			scope: this,
+			isTarget:false,
+			fn: function(dd, ddata) {
+				switch (type) {
+					case 'event':
+						//og.openLink(og.getUrl('event', 'move_event', {id:ddata.id, year:ddata.year, month:ddata.month, day:ddata.day, hour:-1, min:-1, orig_date:ddata.orig_date}), {});
+						if (ddata.hour === undefined) {
+							var regex = /^.*\d{4}-\d{2}-\d{2}\s(\d{2}):(\d{2}).*$/;
+							ddata.hour = ddata.orig_date.replace(regex, '$1');
+							ddata.min = ddata.orig_date.replace(regex, '$2');
+						}
+						og.openLink(og.getUrl('event', 'move_event', {
+								id:ddata.id, year:ddata.year, month:ddata.month, day:ddata.day, hour:ddata.hour, min:ddata.min
+								, orig_date:ddata.orig_date
+								, member_id: ddata.member_id
+						}), {
+							callback: function(success, data) {
+								var title = data.ev_data.subject ? data.ev_data.subject : data.ev_data[""];
+								var time_label = ddata.day + '/' + ddata.month;
+								updateTip(div_id, title, time_label);
+								var els = [];
+								if (Ext.isIE) {
+									var spans = document.getElementsByTagName('span');
+									for(var i=0; i<spans.length; i++){
+										if(spans.item(i).getAttribute('name') == div_id+'_info'){
+										els.push(spans.item(i));
+										}
+									}
+								} else els = document.getElementsByName(div_id+'_info');
+
+								if (els.length > 0) {
+									for (i=0; i<els.length; i++) {
+										els[i].innerHTML = time_label;
+									}
+								}
+							}
+						});
 						break;
 					case 'milestone':
 						og.openLink(og.getUrl('milestone', 'change_due_date', {id:ddata.id, year:ddata.year, month:ddata.month, day:ddata.day, hour:-1, min:-1}), {});
@@ -499,6 +641,8 @@
 				hrs = 1;
 				mins = 0;
 			}
+			else
+				hrs = hrs % 24;
 		}
 		
 		if (use_24hr) {

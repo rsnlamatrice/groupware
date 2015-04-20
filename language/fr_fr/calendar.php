@@ -186,4 +186,6 @@
 	'time' => 'Heure',
 	'list calendar' => 'Voulez vous importer des événements de vos calendriers Google.',
 	'list calendar desc' => 'Merci de sélectionner le calendrier duquel vous voulez importer vos événements.',
+	/*ED150409*/
+	'permission_group' => 'Visibilité',
 ); ?>

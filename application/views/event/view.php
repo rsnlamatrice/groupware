@@ -166,7 +166,8 @@ if (isset($event) && $event instanceof ProjectEvent) {
 	$variables['duration'] = $duration;
 	$variables['desc'] = $desc;
 	
-	
+	/* ED150409*/
+	$variables['permission_group_id'] = $event->getPermissionGroupId();
 	
 	tpl_assign("variables", $variables);
 	tpl_assign("content_template", array('view_event', 'event'));

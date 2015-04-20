@@ -150,8 +150,8 @@ class EventController extends ApplicationController {
 				$date_from_widget = array_var($event_data, 'start_value');
 				$dtv = getDateValue($date_from_widget);
 				$day = $dtv->getDay();
-	       		$month = $dtv->getMonth();
-	       		$year = $dtv->getYear();
+				$month = $dtv->getMonth();
+				$year = $dtv->getYear();
 				
 			} else {
 				$month = isset($event_data['month'])?$event_data['month']:date('n', DateTimeValueLib::now()->getTimestamp());
@@ -181,7 +181,30 @@ class EventController extends ApplicationController {
 			
 			if(array_var($event_data,'repeat_option') == 1) $forever = 1;
 			elseif(array_var($event_data,'repeat_option') == 2) $rnum = array_var($event_data,'repeat_num');
-			elseif(array_var($event_data,'repeat_option') == 3) $rend = getDateValue(array_var($event_data,'repeat_end'));
+			elseif(array_var($event_data,'repeat_option') == 3) {
+				/*ED150410*/
+				$matches = array();
+				if(array_var($event_data,'repeat_end') == 'w'){
+					$monday = $dtv->getMondayOfWeek();
+					if($monday->getDay() != $dtv->getDay()){
+						$dtv = $monday;
+						$day = $dtv->getDay();
+						$month = $dtv->getMonth();
+						$year = $dtv->getYear();
+					}
+					$rend = new DateTimeValue(mktime(0, 0, 0, $month, $day, $year));
+					$rend->add('d', 6); //dimanche
+					$rend = $rend->format('Y-m-d');
+				}
+				elseif(preg_match_all('/^(?<nb>\d+)(?<type>\w)$/', array_var($event_data,'repeat_end'), $matches)){
+					$rend = new DateTimeValue(mktime(0, 0, 0, $month, $day, $year));
+					$rend->add($matches['type'][0], $matches['nb'][0]); //add nb days
+					$rend = $rend->format('Y-m-d');
+				}
+				else {
+					$rend = getDateValue(array_var($event_data,'repeat_end'));
+				}
+			}
 			// verify the options above are valid
 			if(isset($rnum) && $rnum !="") {
 				if(!is_numeric($rnum) || $rnum < 1 || $rnum > 1000) {
@@ -254,6 +277,7 @@ class EventController extends ApplicationController {
 			$timestamp = $dt_start->format('Y-m-d H:i:s');
 			$dt_duration = DateTimeValueLib::make($dt_start->getHour() + $durationhour, $dt_start->getMinute() + $durationmin, 0, $dt_start->getMonth(), $dt_start->getDay(), $dt_start->getYear());
 			$durationstamp = $dt_duration->format('Y-m-d H:i:s');
+						
 			
 			// organize the data expected by the query function
 			$data = array();
@@ -325,6 +349,11 @@ class EventController extends ApplicationController {
 			if (isset($event_data['subscribe_invited'])) {
 				$data['subscribe_invited'] = array_var($event_data,'subscribe_invited') == 'checked';
 			}
+			
+			//ED150409
+			if (isset($event_data['permission_group_id'])) {
+				$data['permission_group_id'] = array_var($event_data,'permission_group_id');
+			}
 			return $data;
 	}
 	
@@ -334,9 +363,18 @@ class EventController extends ApplicationController {
 			ajx_current("empty");
 			return;
 		}
+			
+		/* ED150224
+		* parent member is given
+		*/
+		$active_context;
+		if (isset($_REQUEST['member_id']) && $_REQUEST['member_id'] != 0) 
+			$active_context = array(Members::findById($_REQUEST['member_id']));
+		else
+			$active_context = active_context();	
 		
 		$notAllowedMember = '';
-		if(!(ProjectEvent::canAdd(logged_user(), active_context(),$notAllowedMember ))){	    	
+		if(!(ProjectEvent::canAdd(logged_user(), $active_context,$notAllowedMember ))){	    	
 			if (str_starts_with($notAllowedMember, '-- req dim --')) flash_error(lang('must choose at least one member of', str_replace_first('-- req dim --', '', $notAllowedMember, $in)));
 			else trim($notAllowedMember) == "" ? flash_error(lang('you must select where to keep', lang('the event'))) : flash_error(lang('no context permissions to add',lang("events"), $notAllowedMember));
 			ajx_current("empty");
@@ -344,10 +382,10 @@ class EventController extends ApplicationController {
                 }
 	    
 		$this->setTemplate('event');
-		$event = new ProjectEvent();		
+		$event = new ProjectEvent();
 		$event_data = array_var($_POST, 'event');
 				
-		$event_name = array_var($_GET, 'name'); //if sent from pupup
+		$event_name = array_var($_GET, 'name'); //if sent from popup
 		
 		//var_dump($event_data) ;
 		$month = isset($_GET['month'])?$_GET['month']:date('n', DateTimeValueLib::now()->getTimestamp() + logged_user()->getTimezone() * 3600);
@@ -380,19 +418,25 @@ class EventController extends ApplicationController {
 				'name' => $event_name,
 				'durationhour' => isset($_GET['durationhour']) ? $_GET['durationhour'] : 1,
 				'durationmin' => isset($_GET['durationmin']) ? $_GET['durationmin'] : 0,
+				'member_id' => isset($_GET['member_id']) ? $_GET['member_id'] : 0,
+				/*ED150407*/
+				'permission_group_id' => isset($_GET['permission_group_id']) ? $_GET['permission_group_id'] : null,
+				'repeat_option' => isset($_GET['permission_group_id']) ? $_GET['permission_group_id'] : null,
+				'occurance' => isset($_GET['permission_group_id']) ? $_GET['permission_group_id'] : null,
+				'occurance_jump' => isset($_GET['occurance_jump']) ? $_GET['occurance_jump'] : null,
+				'repeat_end' => isset($_GET['permission_group_id']) ? $_GET['permission_group_id'] : null,
+				'repeat_d' => isset($_GET['repeat_d']) ? $_GET['repeat_d'] : null,
 			); // array
 		} // if
-		
 		tpl_assign('event', $event);
 		tpl_assign('event_data', $event_data);
 		tpl_assign('event_related', false);
 		
 		if (is_array(array_var($_POST, 'event'))) {
-			try {				
+			/* save */
+			try {
 				$data = $this->getData($event_data);
-
 				$event->setFromAttributes($data);
-
 				DB::beginWork();
 				$event->save();
 
@@ -886,6 +930,8 @@ class EventController extends ApplicationController {
 			  'repeat_dow' => $event->getRepeatDow(),
 			  'repeat_wnum' => $event->getRepeatWnum(),
 			  'repeat_mjump' => $event->getRepeatMjump(),
+			  /*ED150407*/
+			  'permission_group_id' => $event->getPermissionGroupId(),
 			); // array
 		} // if
                 
@@ -1345,6 +1391,18 @@ class EventController extends ApplicationController {
 		$different_days = ($os != $od && $ohm != '00:00') || ($day != $nd && $nhm != '00:00');
 	    
         DB::beginWork();
+	
+		/* ED150304
+		 * changement de contexte depuis le calendrier annuel
+		 */
+		$member_id = array_var($_GET, 'member_id', 0);
+		if($member_id){
+			$member_ids = array($member_id);
+			$object_controller = new ObjectController();
+			$object_controller->add_to_members($event, $member_ids);
+			$object_controller->add_subscribers($event);
+		}
+		
 	    $event->setStart($new_start->format("Y-m-d H:i:s"));
 	    $event->setDuration($new_duration->format("Y-m-d H:i:s"));
 	    $event->save();
@@ -2567,6 +2625,17 @@ class EventController extends ApplicationController {
                 ajx_extra_data(array("status" => true));
             }
         }
+	
+	
+	// ED150407
+	// returns permission groups available for event
+	//og.openLink(og.getUrl('event', 'get_permission_groups_available', {context:dimension_members_json, user:og.eventInvitationsUserFilter, evid:< ?php echo $event->isNew() ? 0 : $event->getId()? >}), {callback:og.drawUserList});
+	function get_permission_groups_available(){
+		ajx_current("empty");
+		$data = ContactPermissionGroups::getPermissionGroupsByContact(logged_user()->getId());
+                ajx_extra_data(array( 'contents' => $data ));
+		
+	}
 	
 } // EventController
 

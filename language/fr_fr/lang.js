@@ -251,6 +251,9 @@ addLangs({
 	
 	/*ED150211*/
 	'year view': 'Vue par année',
+	'users_access': 'Visible par',
+	'visibility': 'Visibilité',
+	'in week event': 'Dans la semaine',
 	
 	'month': 'Mois',
 	'month view': 'Vue par mois',

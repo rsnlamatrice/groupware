@@ -344,7 +344,7 @@ class ProjectEvent extends BaseProjectEvent {
 	
 	private function forwardRepDate($min_date) {
 		if ($this->isRepetitive()) {
-			if (!$this->getStart() instanceof DateTimeValue ||	!$min_date instanceof DateTimeValue) {
+			if (!$this->getStart() instanceof DateTimeValue || !$min_date instanceof DateTimeValue) {
 				return array('date' => $min_date, 'count' => 0); //This should not happen...
 			}
 			
@@ -461,6 +461,55 @@ class ProjectEvent extends BaseProjectEvent {
 
 		return $instances;
 	}
+	
+	/**
+	 * ED150410
+	 * La date de l'événement n'est pas important, signifiant "dans la semaine" :
+	 * 	- Commence un lundi, répété sur 7 jours, jusqu'au dimanche.
+	 */
+	function isInWeekEvent(){
+		if($this->getRepeatD() != 1)
+			return false;
+		$dtStart = $this->getStart();
+		$dtEnd = $this->getRepeatEnd();
+		return $dtStart->getDayOfWeek() < 2 //dimanche à cause du décalage horaire
+			&& ($dtEnd instanceof DateTimeValue)
+			&& $dtEnd->getDayOfWeek() == 1
+			&& (round(DateTimeValue::FormatTimeDiff($dtStart, $dtEnd, 'd', 1)) == 6)
+			;
+	}
+	
+	/**
+	 * ED150410
+	 * 
+	 */
+	function isPermissionGroupDefined(){
+		if(!$this->getPermissionGroupId())
+			return false;
+		return $this->getPermissionGroupId();
+	}
+	
+	/**
+	 * ED150410
+	 * Le groupe autorisé est celui l'utilisateur courant
+	 */
+	function isUserOnlyPermissionGroup(){
+		if(!$this->getPermissionGroupId())
+			return false;
+	}
+	
+	
+/*	/**
+	 * ED150407
+	* Set values of 'savePermissionGroupIds' records
+	*
+	* @access public   
+	* @param string $values (comma separated)
+	* @return boolean
+	*/
+	function  savePermissionGroupIdsCSV($ids) {
+		return $this->setColumnValue('permission_group_id', $value);
+	} //  setPermissionG*/roupId()
 } // projectEvent
 
 ?>

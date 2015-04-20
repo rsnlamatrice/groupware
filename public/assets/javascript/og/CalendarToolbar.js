@@ -172,10 +172,23 @@ var topToolbarItems = {
 		iconCls: 'ico-prevmonth',
 		handler: function() {
 			var date = og.calToolbarDateMenu.picker.getValue();
-			if (cal_actual_view == 'index') date = date.add(Date.MONTH, -1);
-			if (cal_actual_view == 'viewweek') date = date.add(Date.DAY, -7);
-			if (cal_actual_view == 'viewweek5days') date = date.add(Date.DAY, -7);
-			if (cal_actual_view == 'viewdate') date = date.add(Date.DAY, -1);
+			switch (cal_actual_view){
+			case 'index':
+			    date = date.add(Date.MONTH, -1);
+			    break;
+			case 'viewyear':
+			    date = date.add(Date.MONTH, -2);
+			    break;
+			case 'viewweek':
+			case 'viewweek5days':
+			    date = date.add(Date.DAY, -7);
+			    break;
+			case 'viewdate':
+			    date = date.add(Date.DAY, -1);
+			    break;
+			default:
+			    break;
+			}
 			og.calToolbarDateMenu.picker.setValue(date);
 			
 			changeView(cal_actual_view, date.getDate(), date.getMonth() + 1, date.getFullYear(), actual_user_filter, actual_status_filter, actual_task_filter);
@@ -186,10 +199,23 @@ var topToolbarItems = {
 		iconCls: 'ico-nextmonth',
 		handler: function() {
 			var date = og.calToolbarDateMenu.picker.getValue();
-			if (cal_actual_view == 'index') date = date.add(Date.MONTH, 1);
-			if (cal_actual_view == 'viewweek') date = date.add(Date.DAY, 7);
-			if (cal_actual_view == 'viewweek5days') date = date.add(Date.DAY, 7);
-			if (cal_actual_view == 'viewdate') date = date.add(Date.DAY, 1);
+			switch (cal_actual_view){
+			case 'index':
+			    date = date.add(Date.MONTH, 1);
+			    break;
+			case 'viewyear':
+			    date = date.add(Date.MONTH, 2);
+			    break;
+			case 'viewweek':
+			case 'viewweek5days':
+			    date = date.add(Date.DAY, 7);
+			    break;
+			case 'viewdate':
+			    date = date.add(Date.DAY, 1);
+			    break;
+			default:
+			    break;
+			}
 			og.calToolbarDateMenu.picker.setValue(date);
 			
 			changeView(cal_actual_view, date.getDate(), date.getMonth() + 1, date.getFullYear(), actual_user_filter, actual_status_filter, actual_task_filter);

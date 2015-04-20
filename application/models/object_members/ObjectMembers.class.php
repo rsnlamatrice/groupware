@@ -1,5 +1,19 @@
 <?php
 
+
+		
+		
+// function used to sort members by path value
+function compare_members_by_path($a, $b){
+    if ($a['path'] == $b['path']) {
+	return 0;
+    }
+    if (!$a['path']) return -1;
+    if (!$b['path']) return 1;
+    
+    return ($a['path'] < $b['path']) ? -1 : 1;
+}
+	      
   /**
   * ObjectMembers
   *
@@ -129,7 +143,37 @@
 				else
 					$sql .= " AND m.depth > 1";
 				
-				$sql .= " ORDER BY m.depth, m.parent_member_id";
+				//Ajout des members enfants n'ayant pas d'objets liés
+				$sql .= " UNION
+				SELECT m.*, NULL AS related_object_id
+				FROM ".TABLE_PREFIX."object_members r
+				JOIN ".TABLE_PREFIX."members m
+					ON r.member_id = m.parent_member_id
+				".//WHERE r.object_id IN (" . substr(str_repeat(', ?', count($object_ids)), 1) . ")
+				"
+				WHERE r.object_id IN (" . implode(', ', $object_ids) . ")
+				
+				AND m.dimension_id = 1
+				
+				"//AND r.is_optimization = 0 "./* 0 : tous les membres, y compris ceux des invités. 1 : chemin complet des membres*/ 
+				
+				;
+				$params = $object_ids;
+				if(is_array($root_member_ids) && count($root_member_ids)){
+					  //strictement supérieur
+					$sql .= " AND m.depth > (
+						SELECT MIN(depth)
+						FROM ".TABLE_PREFIX."members
+						"/*WHERE id IN (" . substr(str_repeat(', ?', count($root_member_ids)), 1) . ")*/
+						." WHERE id IN (" . implode(', ', $root_member_ids) . ")
+					)";
+					$params = array_merge($params, $root_member_ids);
+				}
+				else
+					$sql .= " AND m.depth > 1";
+				
+				
+				$sql .= " ORDER BY depth, parent_member_id";
 				//print_r("<pre>$sql</pre>");
 	  			//var_dump($sql, $object_ids);
 	  			$db_res = DB::execute($sql, $params);
@@ -157,12 +201,12 @@
 					}
 				}
 				//sort by tree path
-				function compare_members_by_path($a, $b){
-				    if ($a['path'] == $b['path']) {
-					return 0;
-				    }
-				    return ($a['path'] < $b['path']) ? -1 : 1;
-				}
+				//function compare_members_by_path($a, $b){
+				//    if ($a['path'] == $b['path']) {
+				//	return 0;
+				//    }
+				//    return ($a['path'] < $b['path']) ? -1 : 1;
+				//}
 				usort($rows_by_member, 'compare_members_by_path');
 								
   				foreach ($rows_by_member as $memberId => $row){
@@ -183,13 +227,84 @@
 					  //$members_by_objects[strval($row['related_object_id'])][strval($row['id'])] = $member;
 				}
 				// set member with max depth
-				foreach ($rows as $row){
+				foreach ($rows as $row)
+					  if($row['related_object_id'] != null) {
 					
-					  $member = $members[strval($row['id'])];
-					  if(!isset($members_by_objects[strval($row['related_object_id'])]))
-						  $members_by_objects[strval($row['related_object_id'])] = $member;
-					  else if($member->getDepth() > $members_by_objects[strval($row['related_object_id'])]->getDepth())
-	      					  $members_by_objects[strval($row['related_object_id'])] = $member;
+							$member = $members[strval($row['id'])];
+							if(!isset($members_by_objects[strval($row['related_object_id'])]))
+								$members_by_objects[strval($row['related_object_id'])] = $member;
+							else if($member->getDepth() > $members_by_objects[strval($row['related_object_id'])]->getDepth())
+								$members_by_objects[strval($row['related_object_id'])] = $member;
+					      }
+  			}
+  			
+  			return $members;
+  		}
+  		
+		/* ED150402
+		 * Returns children members of root member.
+		 *
+		 * @param $root_member_ids : specify minimal depth of members
+		 * @returns array($memberId => $member_properties) ordered by full path
+		 */
+  		static function getChildrenMembers($root_member_ids = false){
+				
+			    $sql = "SELECT m.*
+			    FROM ".TABLE_PREFIX."members m
+			    WHERE m.dimension_id = 1
+			    
+			    "//AND r.is_optimization = 0 "./* 0 : tous les membres, y compris ceux des invités. 1 : chemin complet des membres*/ 
+			    
+			    ;
+			    $params = array();
+			    if(is_array($root_member_ids) && count($root_member_ids)){
+				    $sql .= " AND m.parent_member_id IN (" . implode(', ', $root_member_ids) . ")
+				    ";
+				    //$params = array_merge($params, $root_member_ids);
+			    }
+			    else
+				    $sql .= " AND m.depth > 1";
+			    
+			    $sql .= " ORDER BY m.depth, m.parent_member_id";
+			    //print_r("<pre>$sql</pre>");
+			    //var_dump($sql, $params);
+			    $db_res = DB::execute($sql, $params);
+			    $rows = $db_res->fetchAll();
+  			$members = array();
+  			$rows_by_member = array();
+			    if(count($rows) > 0){
+				$parents = array();
+  				$paths = array();
+  				foreach ($rows as $row){
+					if(!isset($rows_by_member[strval($row['id'])])){
+						if(!isset($rows_by_member[strval($row['parent_member_id'])]))
+							$row['path'] = $row['name'];
+						else {
+							$rows_by_member[strval($row['parent_member_id'])]['has_child'] = true;
+							$row['path'] = $rows_by_member[strval($row['parent_member_id'])]['path'] . '/' . $row['name'];
+						}
+						$rows_by_member[strval($row['id'])] = $row;
+					}
+				}
+				//sort by tree path
+				uasort($rows_by_member, 'compare_members_by_path');
+				
+  				foreach ($rows_by_member as $memberId => $row){
+					  //if(!isset($members_by_objects[strval($row['related_object_id'])])){
+					  //	$members_by_objects[strval($row['related_object_id'])] = array();
+					  //}
+					  if(!isset($members[strval($row['id'])])){
+						  $member = new Member();
+						  $member->loadFromRow($row);
+						  $members[strval($row['id'])] = $member;
+						  $member->setHasChild(isset($row['has_child']) && $row['has_child']);
+					  }
+					  //else
+					  //	  $member = $members[strval($row['id'])];
+					  //if(!isset($parents[strval($row['parent_member_id'])]))
+					  //	  $parents[strval($row['parent_member_id'])] = array();
+					  //$parents[strval($row['parent_member_id'])][] = $member;
+					  //$members_by_objects[strval($row['related_object_id'])][strval($row['id'])] = $member;
 				}
   			}
   			

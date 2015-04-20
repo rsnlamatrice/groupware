@@ -422,7 +422,6 @@ class Timeslot extends BaseTimeslot {
 	 *
 	 */
 	function getMemberIds() {
-		
 		if (is_null($this->memberIds)) {
 			 $this->memberIds = ObjectMembers::getMemberIdsByObject($this->getRelObjectId() > 0 ? $this->getRelObjectId() : $this->getId());
 		}

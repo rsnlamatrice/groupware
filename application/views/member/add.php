@@ -98,11 +98,17 @@
 		</div>
 		<div style="margin-top: 5px; float:left;">
 		<?php if ($current_dimension->getDefinesPermissions() && can_manage_security(logged_user())):?>
-			<label><?php echo lang("permissions")?></label>			
+			<label><?php echo lang("permissions")?></label>
 			<?php
 				tpl_assign('genid', $genid); 
 				$this->includeTemplate(get_template_path('member_permissions_control', 'member'));
 			?>
+			<label>Propager les modifications</label>
+			<select type="hidden" name="propagate_permissions"/>
+				<option value="">non</option>
+				<option value="1">aux enfants directes uniquement</option>
+				<option value="99">à tous les descendants</option>
+			</select>
 		<?php endif ;?>
 		</div>
 		</div>

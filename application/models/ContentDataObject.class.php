@@ -1282,7 +1282,6 @@ abstract class ContentDataObject extends ApplicationDataObject {
 	 *
 	 */
 	function getMemberIds() {
-		
 		if (is_null($this->memberIds)) {
 			 $this->memberIds = ObjectMembers::getMemberIdsByObject($this->getId());
 		}

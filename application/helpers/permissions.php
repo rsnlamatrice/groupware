@@ -1227,8 +1227,13 @@
 	}
 	
 
-	
-	function save_member_permissions_background($user, $member, $permissions) {
+	/*
+	 * ED150416
+	 * @param $propagate_to_children : children depth to duplicate permissions
+	 */
+	function save_member_permissions_background($user, $member, $permissions, $propagate_to_children = false) {
+		//var_dump("save_member_permissions_background", $member->getName());
+				
 		if (!defined('DONT_SAVE_PERMISSIONS_IN_BACKGROUND')) define('DONT_SAVE_PERMISSIONS_IN_BACKGROUND', !is_exec_available());
 		
 		if (substr(php_uname(), 0, 7) == "Windows" || (defined('DONT_SAVE_PERMISSIONS_IN_BACKGROUND') && DONT_SAVE_PERMISSIONS_IN_BACKGROUND)){
@@ -1238,7 +1243,7 @@
 
 			// populate permission groups
 			$permissions_decoded = json_decode($permissions);
-			
+		
 			$to_insert = array();
 			$to_delete = array();
 			if (is_array($permissions_decoded)) {
@@ -1249,6 +1254,7 @@
 						$to_delete[] = "(permission_group_id='".$perm->pg."' AND member_id='".$member->getId()."' AND object_type_id='".$perm->o."')";
 					}
 				}
+		
 				if (count($to_insert) > 0) {
 					$values = implode(',', $to_insert);
 					DB::execute("INSERT INTO ".TABLE_PREFIX."contact_member_permissions (permission_group_id,member_id,object_type_id,can_delete,can_write)
@@ -1265,6 +1271,17 @@
 			
 			$command = "nice -n19 php ". ROOT . "/application/helpers/save_member_permissions.php ".ROOT." ".$user->getId()." ".$user->getTwistedToken()." ".$member->getId()." $perm_filename";
 			exec("$command > /dev/null &");
+		}
+		
+		/* ED150416
+		 * propagation des droits
+		 */
+		if( $propagate_to_children ){
+			$children = ObjectMembers::getChildrenMembers(array($member->getId()));
+			foreach( $children as $childMember){
+				set_time_limit(1 * 60);
+				save_member_permissions_background($user, $childMember, $permissions, $propagate_to_children - 1);
+			}
 		}
 	}
 	
@@ -1390,4 +1407,4 @@
 			exec("$command > /dev/null &");
 		}
 	}
-	
+?>

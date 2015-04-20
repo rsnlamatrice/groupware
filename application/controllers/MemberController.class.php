@@ -459,7 +459,8 @@ class MemberController extends ApplicationController {
 				$ok = $this->saveMember($member_data, $member, false);
 				
 				Env::useHelper('permissions');
-				save_member_permissions_background(logged_user(), $member, array_var($_REQUEST, 'permissions'));
+				//ED150416 added , array_var($_REQUEST, 'propagate_permissions')
+				save_member_permissions_background(logged_user(), $member, array_var($_REQUEST, 'permissions'), array_var($_REQUEST, 'propagate_permissions'));
 				
 				if ($ok) {
 					ApplicationLogs::createLog($member, ApplicationLogs::ACTION_EDIT);
