@@ -201,7 +201,7 @@ $max_events_to_show = 999;
 <div class="calendar" style="padding:0px;height:100%;overflow:hidden;" id="cal_main_div" onmouseup="og.clearPaintedCells();">
 <div id="calendarPanelTopToolbar" class="x-panel-tbar" style="width:100%;height:28px;display:block;background-color:#F0F0F0;"></div>
 <div id="calendarPanelSecondTopToolbar" class="x-panel-tbar" style="width:100%;height:28px;display:block;background-color:#F0F0F0;"></div>
-<div id="<?php echo $genid."view_calendar"?>">  
+<div id="<?php echo $genid."view_calendar"?>" class="css-ruled">  
 <table style="width:100%;height:100%;">
 <tr>
 <td>
@@ -258,7 +258,7 @@ $max_events_to_show = 999;
 					'year' => $dtv_temp->getYear()
 				));
 		?>
-				<div id="alldaycelltitle_<?php echo $strDate ?>" class="chead cell-<?=$strDate?> cell-mbr0 <?=$currentMonday == $strDate ? 'vy-today' : 'cheadNotToday'?> x-tree-lines">
+				<div id="alldaycelltitle_<?php echo $strDate ?>" class="chead cell-<?=$strDate?> top-mbr0 <?=$currentMonday == $strDate ? 'vy-today' : 'cheadNotToday'?> x-tree-lines">
 					<span id="chead<?php echo $strDate ?>">
 						<a class="internalLink" href="<?php echo $p; ?>"><?php echo $dtv_temp->format('d/m') . ' sem.' . $dtv_temp->format('W'); ?></a>
 					</span>
@@ -321,7 +321,7 @@ $max_events_to_show = 999;
 										$max_depth = $member->getDepth();
 									$members_top['_'.$memberId] = $grid_height;
 /* first column : members tree */			?>
-<div class="rhead mbr-depth<?= ($member->getDepth() - $min_depth) ?>" id="rhead<?php echo $memberId?>" >
+<div class="rhead mbr-depth<?= ($member->getDepth() - $min_depth) ?>" id="rhead<?php echo $memberId?>" data-member="<?=$memberId?>" >
 <div class="rheadtext x-tree-lines">
 	<div><?php 
 		if($member->getHasChild()){
@@ -364,7 +364,7 @@ $max_events_to_show = 999;
 									}
 									$top = $members_top['_'.$memberId];
 							?>
-<div id="r<?php echo $memberId?>" class="hrule <?php echo $attr_class?> cell-mbr<?php echo $memberId?>"></div>
+<div id="r<?php echo $memberId?>" class="hrule <?php echo $attr_class?> top-mbr<?php echo $memberId?>"></div>
 <?php
 									$prev_depth = $member->getDepth();
 								}
@@ -398,7 +398,7 @@ $max_events_to_show = 999;
 										
 										$added_divs[] = $div_id;
 ?>
-<div class="vy-cell cell-<?=$strDate?> cell-mbr<?=$memberId?><?= $strDate == $currentMonday ? ' vy-today' : ''?>" id="<?php echo $div_id?>"></div>
+<div class="vy-cell cell-<?=$strDate?> top-mbr<?=$memberId?><?= $strDate == $currentMonday ? ' vy-today' : ''?>" id="<?php echo $div_id?>"></div>
 <?php
 ?>
 
@@ -505,7 +505,7 @@ $max_events_to_show = 999;
 													$bold = "normal";
 												}
 
-						?><div id="w_ev_div_<?php echo $event->getId() . $id_suffix?>" class="chip cell-<?= $strDate ?> cell-mbr<?= substr($parentKey,1) ?>" <?php
+						?><div id="w_ev_div_<?php echo $event->getId() . $id_suffix?>" class="chip cell-<?= $strDate ?> top-mbr<?= substr($parentKey,1) ?>" <?php
 							?> style="margin-top: <?php echo $left_offset?>px; margin-left: <?php echo $left_offset?>px;" <?php
 							?> data-date="<?=$real_start->format(FORMAT_DATE_KEY)?>" data-member="<?=$memberId?>">
 						<div class="t1 <?php echo $ws_class ?>" style="<?php echo $ws_style ?>;border-color:<?php echo $border_color ?>"></div>
@@ -598,13 +598,52 @@ $max_events_to_show = 999;
 
 <script>
 	(function(){
+		function getFavoriteStyleSheet() {
+			if (document.styleSheets) // If browser can play with stylesheets
+				return document.styleSheets[document.styleSheets.length - 1];
+			return false;
+		}
+		function getCSSPageRuleName(ruleName) {
+			var genid = '<?php echo $genid."view_calendar.css-ruled"?>';
+			if (ruleName.indexOf(',') > 0)
+				return '#' + genid + ' ' + ruleName.split(',').join(', #' + genid + ' ');
+			return '#' + genid + ' ' + ruleName;
+		}
+		//delete all rules containing .css-ruled as selector
+		function clearCSSPageRules() {
+			for (var i=1; i<document.styleSheets.length; i++) { // For each stylesheet
+				styleSheet=document.styleSheets[i];          // Get the current Stylesheet
+				var ii=0;                                        // Initialize subCounter.
+				var cssRule=false;                               // Initialize cssRule. 
+				do {                                             // For each rule in stylesheet
+					if (styleSheet.cssRules) {                    // Browser uses cssRules?
+						cssRule = styleSheet.cssRules[ii];         // Yes --Mozilla Style
+					} else {                                      // Browser usses rules?
+						cssRule = styleSheet.rules[ii];            // Yes IE style. 
+					}                                             // End IE check.
+					if (cssRule && cssRule.selectorText       // If we found a rule...
+					&& cssRule.selectorText.indexOf('.css-ruled')>0) { //  match ruleName?
+						if (styleSheet.cssRules) {           // Yes, deleting...
+						   styleSheet.deleteRule(ii);        // Delete rule, Moz Style
+						} else {                             // Still deleting.
+						   styleSheet.removeRule(ii);        // Delete rule IE style.
+						}                                    // End IE check.
+					}                                             // end found cssRule
+					ii++;                                         // Increment sub-counter
+				} while (cssRule) 
+			}  
+		}
 		/******************************************************************************************
 		 * 		http://www.hunlock.com/blogs/Totally_Pwn_CSS_with_Javascript 
 		 ******************************************************************************************/
-		function getCSSRule(ruleName, deleteFlag) {               // Return requested style obejct
+		function getCSSRule(ruleName, deleteFlag, styleSheet) {               // Return requested style obejct
 		   if (document.styleSheets) {                            // If browser can play with stylesheets
+			if (styleSheet) {
+				var cssRule=getCSSRuleInStyleSheet(ruleName, deleteFlag, styleSheet);
+				return cssRule;
+			}
 		      for (var i=0; i<document.styleSheets.length; i++) { // For each stylesheet
-			 var styleSheet=document.styleSheets[i];          // Get the current Stylesheet
+			 styleSheet=document.styleSheets[i];          // Get the current Stylesheet
 			 var cssRule=getCSSRuleInStyleSheet(ruleName, deleteFlag, styleSheet)
 			 if(cssRule) return cssRule;                      // end While loop
 		      }                                                   // end For loop
@@ -613,7 +652,7 @@ $max_events_to_show = 999;
 		}                                                         // end getCSSRule
 		
 		function getCSSRuleInStyleSheet(ruleName, deleteFlag, styleSheet) {               // Return requested style obejct
-			ruleName=ruleName.toLowerCase();                       // Convert test string to lower case.
+			ruleName=getCSSPageRuleName(ruleName.toLowerCase());                       // Convert test string to lower case.
 			var ii=0;                                        // Initialize subCounter.
 			 var cssRule=false;                               // Initialize cssRule. 
 			 do {                                             // For each rule in stylesheet
@@ -660,7 +699,8 @@ $max_events_to_show = 999;
 				 } else { */                                        // Browser is IE?
 					if(styles === undefined)
 						styles = '';
-					styleSheet.insertRule(ruleName+' { ' + styles + ' }', styleSheet.cssRules.length); // Yes, add Moz style.
+					//console.log(getCSSPageRuleName(ruleName)+' { ' + styles + ' }');
+					styleSheet.insertRule(getCSSPageRuleName(ruleName)+' { ' + styles + ' }', styleSheet.cssRules.length); // Yes, add Moz style.
 				 //}                                                // End browser check
 			}
 			
@@ -694,7 +734,7 @@ $max_events_to_show = 999;
 			},
 			cell_onmousedown : function(){
 				var strDate = this.getAttribute('data-date')
-				, memberId = this.className.replace(/^.*\bcell-mbr(\d+).*$/, '$1');
+				, memberId = this.className.replace(/^.*\btop-mbr(\d+).*$/, '$1');
 				og.selectStartDateTime(strDate.substr(8,2), strDate.substr(5,2), strDate.substr(0,4), 0, 0);
 				og.resetCell(this.id);
 				og.paintingDay = strDate;
@@ -747,7 +787,7 @@ $max_events_to_show = 999;
 			},
 			get_member_id : function($cell){
 				var className = $cell.jquery ? $cell.attr('class') : $cell.className;
-				var regex = /^.*(\bcell-mbr(\d+)).*$/;
+				var regex = /^.*(\btop-mbr(\d+)).*$/;
 				if(regex.test(className))
 					return className.replace(regex, '$2');
 				return false;
@@ -961,39 +1001,52 @@ $max_events_to_show = 999;
 						
 			
 			
+			
+			is_visible : function(dom, user_hide_all){
+				return !/parent-tree-collapsed/.test(dom.className)
+					&& (!user_hide_all || !/user-hide/.test(dom.className));//!/display\s?:\s*none/.test(rhead.getAttribute('style'));
+			},
+			is_user_hide_all : function(dom){
+				if (dom.jquery)
+					return dom.parents('.coViewBody:first').hasClass('user-view-trash-checked');
+				return $(dom).parents('.coViewBody:first').hasClass('user-view-trash-checked');
+				
+			},
 			/* Defines members top style */
 			set_members_top : function($header){
 				var height = options.row_height
 				, top = $header[0].offsetTop
 				, parentMemberId = $header[0].id.substr('rhead'.length)
 				, skip_depth = false
-				, styleSheet = false
+				, styleSheet = getFavoriteStyleSheet()
 				, rowHeight = height
 				, css_rule
 				, before = true
 				, lookingForFirstVisible = false
 				, rhead
-				, isVisible;
+				, isVisible
+				, user_hide_all = methods.is_user_hide_all($header);
 				for(var nMember = 0; nMember < options.members.length; nMember++){
 					memberId = options.members[nMember].substr(1);
 					if (before) {
 						if (parentMemberId == memberId) {
-							rhead = document.getElementById('rhead' + memberId);
-							isVisible = !/display\s?:\s*none/.test(rhead.getAttribute('style'));
 							before = false;
-							lookingForFirstVisible = true;
-							if (!isVisible) //due to toggle_user_view_trash
+							rhead = document.getElementById('rhead' + memberId);
+							isVisible = methods.is_visible(rhead, user_hide_all);
+							if (!isVisible) {//due to toggle_user_view_trash
+								lookingForFirstVisible = true;
 								continue;
+							}
 							if (rhead.getAttribute('r-height')) 
 								rowHeight = parseFloat(rhead.getAttribute('r-height'));
 							
 							/* adjusts cells height */
-							css_rule = getCSSRule('.vy-cell.cell-mbr' + memberId, styleSheet);
+							css_rule = getCSSRule('.vy-cell.top-mbr' + memberId, styleSheet);
 							if(css_rule){
 								styleSheet = css_rule.parentStyleSheet;
-								killCSSRule('.vy-cell.cell-mbr' + memberId, styleSheet);
+								killCSSRule('.vy-cell.top-mbr' + memberId, styleSheet);
 							}
-							css_rule = addCSSRule('.vy-cell.cell-mbr' + memberId, 'height: ' + rowHeight + 'px');
+							css_rule = addCSSRule('.vy-cell.top-mbr' + memberId, 'height: ' + rowHeight + 'px');
 							
 							//next row top
 							top += rowHeight;
@@ -1002,20 +1055,20 @@ $max_events_to_show = 999;
 					}
 					else
 						rhead = document.getElementById('rhead' + memberId);
-					isVisible = !/display\s?:\s*none/.test(rhead.getAttribute('style'));//ICICI C IC ICIC
+					isVisible = methods.is_visible(rhead);
 					if (!isVisible)
 						continue;
 					if (lookingForFirstVisible){
 						top = rhead.offsetTop;
 						lookingForFirstVisible=false;
 					}
-					css_rule = getCSSRule('.cell-mbr' + memberId, styleSheet);
+					css_rule = getCSSRule('.top-mbr' + memberId, styleSheet);
 					if(css_rule){
 						styleSheet = css_rule.parentStyleSheet;
-						killCSSRule('.cell-mbr' + memberId, styleSheet);
+						killCSSRule('.top-mbr' + memberId, styleSheet);
 					}
 					
-					css_rule = addCSSRule('.cell-mbr' + memberId, 'top : ' + top + 'px;', styleSheet);
+					css_rule = addCSSRule('.top-mbr' + memberId, 'top : ' + top + 'px;', styleSheet);
 										
 					if (rhead.getAttribute('r-height')) 
 						top += parseFloat(rhead.getAttribute('r-height'));
@@ -1035,42 +1088,60 @@ $max_events_to_show = 999;
 				, max_depth = options.max_depth
 				, $grid = $('#grid')
 				, parentMemberId = $rhead[0].id.substr('rhead'.length)
-				, $table = $grid.parents('.coViewBody:first')
-				, userViewRestricted = $table.hasClass('user-view-trash-checked')					
+				, user_hide_all = methods.is_user_hide_all($grid)
 				;
 				
 				if (expanding) {
-					var skip_depth = false;
-					$rhead.nextAll('div').each(function(){
+					
+					methods.set_row_height($rhead, false);
+					
+					var /*skip_depth = false
+					,*/ collapsed_depth = false
+					, collapsed_parent_id = false
+					, collapsed_parent_ids = {};
+					$rhead.nextAll('div.rhead').each(function(){
 						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
 						if(depth <= root_depth)
 							return false; //stop looping
-						if(skip_depth)
+						/*if(skip_depth)
 							if(skip_depth < depth)
 								return; //next
 							else if(skip_depth == depth)
 								skip_depth = false;
-						if(userViewRestricted && /\buser-hide\b/.test(this.className))
-						   return;
-						this.className = this.className.replace(/\bparent-tree-collapsed/, '');
-						$(this).show();
+						if(user_hide_all && /\buser-hide\b/.test(this.className)){
+							skip_depth = depth;
+							return;
+						}*/
+						
 						var memberId = this.id.substr('rhead'.length);
+						if(collapsed_depth && collapsed_depth < depth){
+							collapsed_parent_ids[memberId] = collapsed_parent_id;
+							return;//next
+						}
+						else if(collapsed_depth == depth){
+							collapsed_parent_id = false;
+							collapsed_depth = false;
+						}
+						this.className = this.className.replace(/\bparent-tree-collapsed/, '');
 						
 						if(this.className.indexOf('tree-collapsed') >= 0){
-							skip_depth = depth;
-							return; //next
+							collapsed_parent_id = memberId;
+							collapsed_depth = depth;
 						}
+						if(this.className.indexOf('row-expanded') >= 0)
+							methods.set_row_height($(this), false);
+						//$(this).show();
 					});
 					//reset children class
-					$grid.find('.cell-mbr' + parentMemberId).each(function(){
+					$grid.find('.top-mbr' + parentMemberId + '[data-member]').each(function(){
 						var $this = $(this);
-						if ($this.attr('data-member')) {
-							var memberId = $this.attr('data-member');
-							if(memberId == parentMemberId)
-								return;
-							//set class to set top position
-							this.className = this.className.replace(/\bcell-mbr\d+/, 'cell-mbr' + memberId);
-						}
+						var memberId = $this.attr('data-member');
+						if(memberId == parentMemberId)
+							return;
+						//set class to set top position
+						if(collapsed_parent_ids[memberId])
+							memberId = collapsed_parent_ids[memberId];
+						this.className = this.className.replace(/\btop-mbr\d+/, 'top-mbr' + memberId);
 					});
 					$img
 						.removeClass('x-tree-elbow-plus')
@@ -1079,24 +1150,22 @@ $max_events_to_show = 999;
 						.removeClass('tree-collapsed')
 						.addClass('tree-expanded');
 				}
-				else {//collpase
+				else {//collapse
 					$rhead.nextAll('div.rhead').each(function(){
 						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
 						if(depth <= root_depth)
-							return false;
+							return false;//stop
 						var $this = $(this);
 						$this.addClass('parent-tree-collapsed');
-						if ($this.is(':visible'))
-							$this.hide();
+						//if ($this.is(':visible'))
+						//	$this.hide();
 						var memberId = this.id.substr('rhead'.length);
-						$grid.find('.cell-mbr' + memberId).each(function(){
+						$grid.find('.top-mbr' + memberId).each(function(){
 							var $this = $(this);
-							if (!$this.attr('data-member')) {
-								//remembers memberId
-								$this.attr('data-member', memberId);
-							}
+							if (this.getAttribute('data-member') == null) 
+								this.setAttribute('data-member',memberId);
 							//set parent class to set top position
-							this.className = this.className.replace(/\bcell-mbr\d+/, 'cell-mbr' + parentMemberId);
+							this.className = this.className.replace(/\btop-mbr\d+/, 'top-mbr' + parentMemberId);
 						});
 					});
 					
@@ -1106,6 +1175,7 @@ $max_events_to_show = 999;
 					$rhead
 						.removeClass('tree-expanded')
 						.addClass('tree-collapsed');
+					methods.set_row_height($rhead, false);
 				}
 				methods.set_members_top($rhead);
 				//throw('ICI C ICI CI ');
@@ -1113,26 +1183,42 @@ $max_events_to_show = 999;
 			},
 			
 			/* Set row height to see all events */
-			toggle_rows_height : function(){
-				var $this = $(this)
-				, $rhead = $this.parents('.rhead:first')
-				, memberId = $rhead[0].id.substr('rhead'.length)//methods.get_member_id($rhead)
+			set_row_height : function($rhead, expanding){
+				var memberId = $rhead[0].id.substr('rhead'.length)//methods.get_member_id($rhead)
 				, $grid = $('#grid')
-				, $cells = $grid.find('.chip.cell-mbr' + memberId)
-				, expanding = /ico-expand/.test(this.className)
+				, $cells = $grid.find('.chip.top-mbr' + memberId)
 				, $cells_by_dates = {}
+				, $hidden_cells_by_dates = {}
 				, max_cells = 1
-				, cell_override_offset;
+				, cell_override_offset
+				, user_hide_all = methods.is_user_hide_all($grid)
+				;
+				if (user_hide_all) {
+					var hidden_members = {};
+					$rhead.nextAll('.rhead.user-hide').each(function(){
+						hidden_members[this.id.substr('rhead'.length)] = 1;
+					});
+				}
 				if(expanding){
-					$this.removeClass('ico-expand').addClass('ico-collapse');
+					$rhead.find('.ico-expand').removeClass('ico-expand').addClass('ico-collapse');
+					$rhead.addClass('row-expanded').removeClass('row-collapsed');
 					cell_override_offset = options.row_height;
 				}
 				else {
-					$this.removeClass('ico-collapse').addClass('ico-expand');
+					$rhead.find('.ico-collapse').removeClass('ico-collapse').addClass('ico-expand');
+					$rhead.removeClass('row-expanded').addClass('row-collapsed');
 					cell_override_offset = 0.25;
 				}
 				$cells.each(function(){
 					var strDate = methods.get_date(this);
+					if (hidden_members
+					&& hidden_members[this.getAttribute('data-member')]){
+						if ($hidden_cells_by_dates[strDate] === undefined)
+							$hidden_cells_by_dates[strDate] = [];
+						$hidden_cells_by_dates[strDate].push(this);
+						this.style.marginTop = ($hidden_cells_by_dates[strDate].length-1) * 0.25 + 'px';
+						return;
+					}
 					if ($cells_by_dates[strDate] === undefined)
 						$cells_by_dates[strDate] = [];
 					$cells_by_dates[strDate].push(this);
@@ -1152,6 +1238,15 @@ $max_events_to_show = 999;
 				}
 				methods.set_members_top($rhead);
 				//throw('IC IIC I CI CI C');
+			},
+			
+			/* Set row height to see all events */
+			toggle_rows_height : function(){
+				var $this = $(this)
+				, $rhead = $this.parents('.rhead:first')
+				, expanding = /ico-expand/.test(this.className);
+				methods.set_row_height($rhead, expanding);
+				throw('IC IIC I CI CI C');
 			}
 			
 			// hides/shows members user choosed to hide
@@ -1164,39 +1259,44 @@ $max_events_to_show = 999;
 					//show all
 					$this.removeClass('checked');
 					$table.removeClass('user-view-trash-checked');
-					//show all hidden
-					$table.find('.rhead.user-hide').each(function(){
-						//if ($(this).parents('.tree-collapsed:first').length)
-						//	return;
-						var parentMemberId = this.id.substr('rhead'.length);
-						//$table.find('.cell-mbr' + parentMemberId).show();
-						$table.find('.cell-mbr' + parentMemberId + ', .chip[data-member="' + parentMemberId + '"]').show();
-						if (!/parent-tree-collapsed/.test(this.className)) 
-							$(this).show();
-						
-					});
 				} else {
 					//hide checked
 					$this.addClass('checked');
 					$table.addClass('user-view-trash-checked');
-					//hide all hidden
-					$table.find('.rhead.user-hide').hide().each(function(){
-						//if ($(this).parents('.tree-collapsed:first').length)
-						//	return;
-						var parentMemberId = this.id.substr('rhead'.length);
-						//$table.find('.cell-mbr' + parentMemberId).hide();
-						$table.find('.chip[data-member="' + parentMemberId + '"]').hide();
-						
-					});
 				}
 				var $rhead = $table.find('.rhead.user-hide:first');
 				if($rhead.length == 0)
-					$rhead = $table.find('.rhead.user-hide:first')
+					$rhead = $table.find('.rhead:first')
 				if($rhead.length > 0)
 					methods.set_members_top($rhead);
-				//$grid.find('.cell-mbr' + parentMemberId).hide();
-				
 			}
+			
+			// define css rules to hide members
+			, setMemberHiddenStyle: function($rhead, hidden){
+				
+				var parentMemberId = $rhead[0].id.substr('rhead'.length)
+				, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
+				, selector = '.user-view-trash-checked [data-member="' + parentMemberId + '"]'
+				, styleSheet = getFavoriteStyleSheet();
+				
+				
+				$rhead.nextAll('div.rhead').each(function(){
+					var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
+					if(depth <= root_depth)
+						return false;//stop
+					var memberId = this.id.substr('rhead'.length);
+					selector += ', .user-view-trash-checked [data-member="' + memberId + '"]';
+				});
+				
+				css_rule = getCSSRule(selector, styleSheet);
+				if(css_rule){
+					styleSheet = css_rule.parentStyleSheet;
+					killCSSRule(selector, styleSheet);
+				}
+				if(hidden)
+					css_rule = addCSSRule(selector, 'display: none;', styleSheet);
+			}
+			
 			// hides/shows member row
 			, toggle_member_row_trash: function(){
 				var $this = $(this)
@@ -1210,164 +1310,11 @@ $max_events_to_show = 999;
 					$rhead.addClass('user-hide');
 				}
 				checked = !checked;
-				if (checked && user_hide_all) {
-					//reset children class
-					var parentMemberId = $rhead[0].id.substr('rhead'.length)
-					, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
-					$table.find('.cell-mbr' + parentMemberId).hide();
-					$rhead.hide();
-					//hide sub nodes
-					$rhead.nextAll('div.rhead').each(function(){
-						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-						, memberId = this.id.substr('rhead'.length);
-						if(depth <= root_depth)
-							return false;
-						$table.find('.cell-mbr' + memberId).hide();
-						$(this).hide();
-					});
-					
-					methods.set_members_top($rhead);
-				}
-				else if (checked && !user_hide_all) {
-					//reset children class
-					var parentMemberId = $rhead[0].id.substr('rhead'.length)
-					, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
-					$table.find('.cell-mbr' + parentMemberId).show();
-					$rhead.show();
-					//hide sub nodes
-					$rhead.nextAll('div.rhead').each(function(){
-						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-						, memberId = this.id.substr('rhead'.length);
-						if(depth <= root_depth)
-							return false;
-						$table.find('.cell-mbr' + memberId).show();
-						$(this).show();
-					});
-					//methods.set_members_top($rhead);
-				}
-				else if (!checked && user_hide_all) {
-					//reset children class
-					var parentMemberId = $rhead[0].id.substr('rhead'.length)
-					, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-					, skip_depth;
-					$table.find('.cell-mbr' + parentMemberId).show();
-					$rhead.show();
-					//hide sub nodes
-					$rhead.nextAll('div.rhead').each(function(){
-						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-						, memberId = this.id.substr('rhead'.length);
-						if (/\buser-hide\b/.test(this.className)) {
-							skip_depth = depth + 1;
-							$table.find('.cell-mbr' + memberId).hide();
-							$(this).hide();
-							
-							return;
-						}
-						if (depth >= skip_depth) {
-							//enfant d'un niveau masqué
-							$table.find('.cell-mbr' + memberId).hide();
-							$(this).hide();
-							
-							return;
-						}
-						if(depth <= root_depth)
-							return false;
-						if(skip_depth)
-							skip_depth = 0;
-						$table.find('.cell-mbr' + memberId).show();
-						$(this).show();
-					});
-					//methods.set_members_top($rhead);
-					
-				}
-				//throw('ICI C ICI CI ');
+				methods.setMemberHiddenStyle($rhead, checked);
+				if(user_hide_all)
+					methods.set_members_top($table.find('.rhead:first'));
 			}
 			
-			, rows_display : function($rhead){
-				
-				var $table = $rhead.parents('.coViewBody:first')
-				, is_collapsed = /\btree-collapsed\b/.test($rhead[0].className)
-				, user_hide_row = /\buser-hide\b/.test($rhead[0].className)
-				, user_hide_all = $table.hasClass('user-view-trash-checked');
-				
-				if (user_hide_all && user_hide_row) {
-					//masque toute la ligne, et donc les sous-éléments
-					
-					var parentMemberId = $rhead[0].id.substr('rhead'.length)
-					, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
-					$table.find('.cell-mbr' + parentMemberId).hide();
-					$rhead.hide();
-					
-					//hide sub nodes
-					$rhead.nextAll('div.rhead').each(function(){
-						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-						, memberId = this.id.substr('rhead'.length);
-						if(depth <= root_depth)
-							return false;
-						$table.find('.cell-mbr' + memberId).hide();
-						$(this).hide();
-					});
-				}
-				else if (user_hide_all && user_hide_row) {
-					//masque toute la ligne, et donc les sous-éléments
-					
-					var parentMemberId = $rhead[0].id.substr('rhead'.length)
-					, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
-					$table.find('.cell-mbr' + parentMemberId).hide();
-					$rhead.hide();
-					
-					//hide sub nodes
-					$rhead.nextAll('div.rhead').each(function(){
-						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-						, memberId = this.id.substr('rhead'.length);
-						if(depth <= root_depth)
-							return false;
-						$table.find('.cell-mbr' + memberId).hide();
-						$(this).hide();
-					});
-				}
-				else if (!user_hide_all) {
-					//affiche toute la ligne, et donc les sous-éléments
-					
-					var parentMemberId = $rhead[0].id.substr('rhead'.length)
-					, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
-					$table.find('.cell-mbr' + parentMemberId).show();
-					$rhead.show();
-					//hide sub nodes
-					$rhead.nextAll('div.rhead').each(function(){
-						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-						, memberId = this.id.substr('rhead'.length);
-						if(depth <= root_depth)
-							return false;
-						$table.find('.cell-mbr' + memberId).show();
-						$(this).show();
-					});
-				}
-				$rhead.nextAll('div.rhead').each(function(){
-					var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-					, memberId = this.id.substr('rhead'.length);
-					if (/\buser-hide\b/.test(this.className)) {
-						skip_depth = depth + 1;
-						$table.find('.cell-mbr' + memberId).hide();
-						$(this).hide();
-						
-						return;
-					}
-					if (depth >= skip_depth) {
-						//enfant d'un niveau masqué
-						$table.find('.cell-mbr' + memberId).hide();
-						$(this).hide();
-						
-						return;
-					}
-					if(depth <= root_depth)
-						return false;
-					if(skip_depth)
-						skip_depth = 0;
-					$table.find('.cell-mbr' + memberId).show();
-					$(this).show();
-				});
-			}
 		}
 		<?php } ?>
 		;
@@ -1396,6 +1343,7 @@ $max_events_to_show = 999;
 				og.createYearViewDrag.apply(og, createEventDrag_args[i]);
 			}
 		<?php }?>
+		clearCSSPageRules();
 		$(".internalLink, .chip").click(methods.disableEventPropagation);
 		$(".chip").mouseup(methods.clearPaintedCells);
 		$(".chead-expand").click(methods.chead_expand_onclick);
@@ -1514,12 +1462,20 @@ $max_events_to_show = 999;
 		overflow: hidden; -o-text-overflow: ellipsis; /* pour Opera 9 */ text-overflow: ellipsis; /* pour le reste du monde */;
 		height:100%; line-height: 14px;
 	}
+	.rhead.parent-tree-collapsed {
+		display: none;
+	}
 	.rheadtext > .member-tools {
 		float: right;
 		height: 100%;
 		width: 16px;
 		/*display: none;*/
-		opacity: 0.2;
+	}
+	.rheadtext > .member-tools * {
+		opacity: 0.3;
+	}
+	.rhead.user-hide .rheadtext > .member-tools button.ico-trash {
+		opacity: 1;
 	}
 	.rheadtext > .member-tools > * {
 		/*background-position: 0px <?php echo (PX_HEIGHT-16)/2 ?>px;*/
@@ -1528,9 +1484,10 @@ $max_events_to_show = 999;
 		cursor: pointer;
 	}
 	.rheadtext:hover > .member-tools {
-		/*display: inline-block;*/
-		opacity: 1;
 		background-color: #DDDDDD;
+	}
+	.rheadtext:hover > .member-tools * {
+		opacity: 1;
 	}
 	
 	.member-tools .ico-collapse {
@@ -1738,13 +1695,12 @@ $max_events_to_show = 999;
 	?> .cell-<?=$strDate?> { left: <?=$left?>px; }
 <?php	 }
 	
-	?> .cell-mbr0 {	top: 0%; }
+	?> .top-mbr0 {	top: 0%; }
 <?php
 	
 	foreach($members_top as $memberId => $top){
-	?> .cell-mbr<?=substr($memberId, 1)?> {	top: <?=$top?>px; }
+	?> .top-mbr<?=substr($memberId, 1)?> {	top: <?=$top?>px; }
 <?php	}
-	
 	?>
 </style>
 <?php
