@@ -1246,7 +1246,7 @@ $max_events_to_show = 999;
 				, $rhead = $this.parents('.rhead:first')
 				, expanding = /ico-expand/.test(this.className);
 				methods.set_row_height($rhead, expanding);
-				throw('IC IIC I CI CI C');
+				//throw('IC IIC I CI CI C');
 			}
 			
 			// hides/shows members user choosed to hide
