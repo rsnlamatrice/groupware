@@ -807,7 +807,8 @@ class EventController extends ApplicationController {
 		if($view_type == 'viewdate') $this->viewdate($view_type, $user_filter, $status_filter, $task_filter);
 		else if($view_type == 'index') $this->index($view_type, $user_filter, $status_filter, $task_filter);
 		else if($view_type == 'viewweek5days') $this->viewweek5days($view_type, $user_filter, $status_filter, $task_filter);
-		else $this->viewweek($view_type, $user_filter, $status_filter, $task_filter);
+		else if($view_type == 'viewyear') $this->viewyear($view_type, $user_filter, $status_filter, $task_filter);
+		else  $this->viewweek($view_type, $user_filter, $status_filter, $task_filter);
 	}
 	
 	

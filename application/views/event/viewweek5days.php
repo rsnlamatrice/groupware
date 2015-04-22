@@ -74,7 +74,6 @@ if (!$max_events_to_show) $max_events_to_show = 15;
 		$tmp_tasks = array_merge($tmp_tasks, replicateRepetitiveTaskForCalendar($task, $date_start, $date_end));
 	}
         
-var_dump($date_start->format('d/m/Y'), $date_end->format('d/m/Y'), count($tasks), count($tmp_tasks));
 	$dates = array(); //datetimevalue for each day of week
 	$results = array();
 	$allday_events_count = array();

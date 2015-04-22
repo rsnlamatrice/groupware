@@ -188,7 +188,7 @@ $max_events_to_show = 999;
 		$users_array[] = $u->getArrayInfo();
 	foreach($companies as $company)
 		$companies_array[] = $company->getArrayInfo();
-	
+	//var_dump($userPreferences);
 ?>
 <div id="calHiddenFields">
 	<input type="hidden" id="hfCalUsers" value="<?php echo clean(str_replace('"',"'", str_replace("'", "\'", json_encode($users_array)))) ?>"/>
@@ -286,6 +286,7 @@ $max_events_to_show = 999;
 		<div class="nav-btn nav-toolbar toolbar-left x-tree-arrows">
 			<div class="user-view">
 				<button class="db-ico ico-trash checked">&nbsp;</button>
+				<button class="db-ico ico-refresh">&nbsp;</button>
 			</div>
 			<div class="nav-btn btn-left">
 				<img class="x-tree-elbow-end-minus" src="s.gif"/>
@@ -368,9 +369,7 @@ $max_events_to_show = 999;
 <?php
 									$prev_depth = $member->getDepth();
 								}
-?>
-<?php /*<div id="r-bottom" class="hrule"></div>*/ ?>
-
+?><?php /*<div id="r-bottom" class="hrule"></div>*/?>
 <div id="eventowner" class="eventowner" onclick="og.disableEventPropagation(event) ">
 <?php
 								$nWeek = 0;
@@ -399,9 +398,6 @@ $max_events_to_show = 999;
 										$added_divs[] = $div_id;
 ?>
 <div class="vy-cell cell-<?=$strDate?> top-mbr<?=$memberId?><?= $strDate == $currentMonday ? ' vy-today' : ''?>" id="<?php echo $div_id?>"></div>
-<?php
-?>
-
 <?php									}
 
 									 ?><div id="vd<?php echo $strDate ?>" class="cell-<?=$strDate?> vy-vd"></div>
@@ -498,8 +494,7 @@ $max_events_to_show = 999;
 													addTip('w_ev_div_' + '<?php echo $event->getId() . $id_suffix ?>', <?php echo json_encode(clean($event->getObjectName())) ?>
 													       , <?php echo json_encode($tipBody);?>);
 												</script>
-												<?php */?>
-	<?php
+												<?php */
 												$bold = "bold";
 												if ($event instanceof Contact || $event->getIsRead(logged_user()->getId())){
 													$bold = "normal";
@@ -595,14 +590,22 @@ $max_events_to_show = 999;
 </div>
 </div>
 
-
 <script>
 	(function(){
+		/******************************************************************************************
+		 * 		css-ruled functions 
+		 ******************************************************************************************/
 		function getFavoriteStyleSheet() {
+			if (document.styleSheets)
+				for (var i=document.styleSheets.length - 1; i > 0; i--)
+					if (document.styleSheets[i].title == 'view-year-css-ruled') 
+						return document.styleSheets[i];
+				
 			if (document.styleSheets) // If browser can play with stylesheets
 				return document.styleSheets[document.styleSheets.length - 1];
 			return false;
 		}
+		//since I use a specific style sheet with a title="ccs-ruled", this is not needed
 		function getCSSPageRuleName(ruleName) {
 			var genid = '<?php echo $genid."view_calendar.css-ruled"?>';
 			if (ruleName.indexOf(',') > 0)
@@ -610,28 +613,47 @@ $max_events_to_show = 999;
 			return '#' + genid + ' ' + ruleName;
 		}
 		//delete all rules containing .css-ruled as selector
+		//since I use a specific style sheet with a title="ccs-ruled", this is not needed
 		function clearCSSPageRules() {
-			for (var i=1; i<document.styleSheets.length; i++) { // For each stylesheet
-				styleSheet=document.styleSheets[i];          // Get the current Stylesheet
-				var ii=0;                                        // Initialize subCounter.
-				var cssRule=false;                               // Initialize cssRule. 
-				do {                                             // For each rule in stylesheet
-					if (styleSheet.cssRules) {                    // Browser uses cssRules?
-						cssRule = styleSheet.cssRules[ii];         // Yes --Mozilla Style
-					} else {                                      // Browser usses rules?
-						cssRule = styleSheet.rules[ii];            // Yes IE style. 
-					}                                             // End IE check.
-					if (cssRule && cssRule.selectorText       // If we found a rule...
-					&& cssRule.selectorText.indexOf('.css-ruled')>0) { //  match ruleName?
-						if (styleSheet.cssRules) {           // Yes, deleting...
-						   styleSheet.deleteRule(ii);        // Delete rule, Moz Style
-						} else {                             // Still deleting.
-						   styleSheet.removeRule(ii);        // Delete rule IE style.
-						}                                    // End IE check.
-					}                                             // end found cssRule
-					ii++;                                         // Increment sub-counter
-				} while (cssRule) 
-			}  
+			var styleSheet=getFavoriteStyleSheet() ;		// Get the current Stylesheet
+			if (!styleSheet)
+				return;
+			var ii=0					// Initialize subCounter.
+			, cssRule=false, cssRules;          // Initialize cssRule.
+			try {
+				if (styleSheet.cssRules) {                    // Browser uses cssRules?
+					cssRules = styleSheet.cssRules;         // Yes --Mozilla Style
+				} else {                                      // Browser usses rules?
+					cssRules = styleSheet.rules;            // Yes IE style. 
+				}                                             // End IE check.
+			}
+			catch(ex){
+				console.log('Error getting styleSheet rules : ' + ex);
+				return;
+			}
+			//console.log('styleSheet, ' + cssRules.length + ' rules');
+			do {                                             // For each rule in stylesheet
+				//console.log('styleSheet.cssRules ' + i + '/' + ii);
+				cssRule = cssRules[ii];
+				if (ii == 210) {
+					console.log('cssRule.selectorText');
+				}
+				//console.log('styleSheet.cssRules post');
+				if (cssRule && cssRule.selectorText       // If we found a rule...
+				&& cssRule.selectorText.indexOf('.css-ruled')>0) { //  match ruleName?
+					//console.log('styleSheet.cssRules av delete ' + ii);
+					if (styleSheet.cssRules) {           // Yes, deleting...
+					   styleSheet.deleteRule(ii);        // Delete rule, Moz Style
+					} else {                             // Still deleting.
+					   styleSheet.removeRule(ii);        // Delete rule IE style.
+					}                                    // End IE check.
+					//console.log('styleSheet.cssRules ap delete ' + ii);
+					deleteDone = true;
+					
+				}                                             // end found cssRule
+				else
+					ii++;                                // Increment sub-counter
+			} while (cssRule) 
 		}
 		/******************************************************************************************
 		 * 		http://www.hunlock.com/blogs/Totally_Pwn_CSS_with_Javascript 
@@ -690,8 +712,9 @@ $max_events_to_show = 999;
 			if (cssRule)	                        	// if rule does exist...
 				return cssRule;
 			if (!styleSheet) {
-				var i = 1;//document.styleSheets.length-1;		// 0 can not be used
-				 styleSheet = document.styleSheets[i]; // styleSheet to use.
+				//var i = 1;//document.styleSheets.length-1;		// 0 can not be used
+				// styleSheet = document.styleSheets[i]; // styleSheet to use.
+				 styleSheet = getFavoriteStyleSheet();
 			}
 			if (styleSheet) {
 				/*if (styleSheet.addRule) {           // Browser is IE?
@@ -706,9 +729,10 @@ $max_events_to_show = 999;
 			
 		   }                                                      // End browser ability check.
 		   return getCSSRule(ruleName, styleSheet);                           // return rule we just created.
-		} 
+		}
 		/******************************************************************************************/
 
+		
 	<?php	/* ED150219 */
 		?>var options = {
 			dayShortNames : ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam']
@@ -1006,10 +1030,12 @@ $max_events_to_show = 999;
 				return !/parent-tree-collapsed/.test(dom.className)
 					&& (!user_hide_all || !/user-hide/.test(dom.className));//!/display\s?:\s*none/.test(rhead.getAttribute('style'));
 			},
-			is_user_hide_all : function(dom){
-				if (dom.jquery)
-					return dom.parents('.coViewBody:first').hasClass('user-view-trash-checked');
-				return $(dom).parents('.coViewBody:first').hasClass('user-view-trash-checked');
+			is_user_hide_all : function($dom){
+				if (!$dom.jquery)
+					$dom = $($dom);
+				if ($dom.hasClass('coViewBody'))
+					return $dom.hasClass('user-view-trash-checked');
+				return $dom.parents('.coViewBody:first').hasClass('user-view-trash-checked');
 				
 			},
 			/* Defines members top style */
@@ -1103,15 +1129,6 @@ $max_events_to_show = 999;
 						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
 						if(depth <= root_depth)
 							return false; //stop looping
-						/*if(skip_depth)
-							if(skip_depth < depth)
-								return; //next
-							else if(skip_depth == depth)
-								skip_depth = false;
-						if(user_hide_all && /\buser-hide\b/.test(this.className)){
-							skip_depth = depth;
-							return;
-						}*/
 						
 						var memberId = this.id.substr('rhead'.length);
 						if(collapsed_depth && collapsed_depth < depth){
@@ -1251,17 +1268,25 @@ $max_events_to_show = 999;
 			
 			// hides/shows members user choosed to hide
 			, toggle_user_view_trash: function(){
-				var checked = /\bchecked\b/.test(this.className)
-				, $this = $(this)
+				var checked = /\bchecked\b/.test(this.className);
+				methods.set_user_hide_all(!checked);
+				methods.saveYearViewUserPreferences();
+				throw('ICI C ICI CI ');
+			}
+			
+			// hides/shows members user choosed to hide
+			, set_user_hide_all: function(force_hide){
+				var checked = !force_hide
+				, $icon = $('#allDayGridContainer .user-view .ico-trash')
 				, $grid = $('#grid')
-				, $table = $this.parents('.coViewBody:first');
+				, $table = $grid.parents('.coViewBody:first');
 				if(checked){
 					//show all
-					$this.removeClass('checked');
+					$icon.removeClass('checked');
 					$table.removeClass('user-view-trash-checked');
 				} else {
 					//hide checked
-					$this.addClass('checked');
+					$icon.addClass('checked');
 					$table.addClass('user-view-trash-checked');
 				}
 				var $rhead = $table.find('.rhead.user-hide:first');
@@ -1303,7 +1328,7 @@ $max_events_to_show = 999;
 				, $rhead = $this.parents('.rhead:first')
 				, $table = $this.parents('.coViewBody:first')
 				, checked = /\buser-hide\b/.test($rhead[0].className)
-				, user_hide_all = $table.hasClass('user-view-trash-checked');
+				, user_hide_all = methods.is_user_hide_all($table);
 				if(checked){
 					$rhead.removeClass('user-hide');
 				} else {
@@ -1313,6 +1338,62 @@ $max_events_to_show = 999;
 				methods.setMemberHiddenStyle($rhead, checked);
 				if(user_hide_all)
 					methods.set_members_top($table.find('.rhead:first'));
+				methods.saveYearViewUserPreferences();
+			}
+		
+			/******************************************************************************************
+			 * 		localstorage 
+			 ******************************************************************************************/
+			, getUserPreferencesKey : function() {
+				var userId = <?php echo logged_user()->getId(); ?>;
+				return "fo-view-year-css-ruled-" + userId;
+			}
+			, loadYearViewUserPreferences : function() {
+				var data = localStorage.getItem(this.getUserPreferencesKey());
+				if (!data) 
+					return;
+				var $grid = $('#grid')
+				, $table = $grid.parents('.coViewBody:first')
+				, user_hide_all = methods.is_user_hide_all($table)
+				;
+				if (data.hiddenMbr)
+					for(var i = 0; i < data.hiddenMbr.length; i++){
+						methods.setMemberHiddenStyle($("#rhead" + data.hiddenMbr[i]), true);
+					}
+				if (data.collapsedMbr){
+					for(var i = 0; i < data.collapsedMbr.length; i++){
+						var $rhead = $("#rhead" + data.collapsedMbr[i])
+						, $img = $rhead.find('.x-tree-elbow-minus:first');
+					
+						$img
+							.removeClass('x-tree-elbow-minus')
+							.addClass('x-tree-elbow-plus');
+						$rhead
+							.removeClass('tree-expanded')
+							.addClass('tree-collapsed');
+					}
+					if (data.collapsedMbr.length) {
+						
+					}
+				}
+				methods.toggle_user_view_trash(data.user_hide_all);
+			}
+			, saveYearViewUserPreferences : function() {
+				var data = { 'hiddenMbr' : [], 'collapsedMbr' : []};
+				var $grid = $('#grid')
+				, $table = $grid.parents('.coViewBody:first')
+				, user_hide_all = methods.is_user_hide_all($table)
+				, $rheadUserHide = $table.find('.rhead.user-hide')
+				, $nodesCollapsed = $table.find('.rhead.ico-expand')
+				;
+				$rheadUserHide.each(function(){
+					data.hiddenMbr.push(this.id.substr('rhead'.length));
+				});
+				$nodesCollapsed.each(function(){
+					data.collapsedMbr.push(this.id.substr('rhead'.length));
+				});
+				data.user_hide_all = user_hide_all;
+				localStorage.setItem(this.getUserPreferencesKey(), data);
 			}
 			
 		}
@@ -1352,6 +1433,8 @@ $max_events_to_show = 999;
 		$("#rowheaders .x-tree-ec-icon.x-tree-elbow-minus, #rowheaders .x-tree-ec-icon.x-tree-elbow-plus").click(methods.toggle_tree_node);
 		$('.user-view .ico-trash').click(methods.toggle_user_view_trash);
 		$('.member-tools .ico-trash').click(methods.toggle_member_row_trash);
+		$('.user-view .ico-refresh').click(methods.loadYearViewUserPreferences);
+		//methods.loadYearViewUserPreferences();
 	})();
 
 	// Top Toolbar	
@@ -1405,7 +1488,7 @@ $max_events_to_show = 999;
             $("#<?php echo $genid?>type_related").val(val);
         }
 </script>
-<style>
+<style >
 	.vy-cell {
 		width:<?php echo $date_width ?>px;
 		max-width:<?php echo $date_width * 8 ?>px;
@@ -1703,6 +1786,7 @@ $max_events_to_show = 999;
 <?php	}
 	?>
 </style>
+<style title="view-year-css-ruled">/*ED150421 used to insert css rules programmatically*/</style>
 <?php
 //die( ob_get_contents() );
 ?>
