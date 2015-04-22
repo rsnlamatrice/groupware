@@ -188,4 +188,16 @@
 	'list calendar desc' => 'Merci de sélectionner le calendrier duquel vous voulez importer vos événements.',
 	/*ED150409*/
 	'permission_group' => 'Visibilité',
+	'Jan' => 'Jan',
+	'Feb' => 'Fév',
+	'Mar' => 'Mar',
+	'Apr' => 'Avr',
+	'May' => 'Mai',
+	'Jun' => 'Juin',
+	'Jul' => 'Jul',
+	'Aug' => 'Août',
+	'Sep' => 'Sep',
+	'Oct' => 'Oct',
+	'Nov' => 'Nov',
+	'Dec' => 'Déc',
 ); ?>

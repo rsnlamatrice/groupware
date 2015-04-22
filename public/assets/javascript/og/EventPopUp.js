@@ -357,6 +357,7 @@ og.EventPopUp.goToEdit = function (){
 	/* ED150304 */
 	var member_id = Ext.getCmp('member_id').getValue()
 	, in_week_event = Ext.getCmp('in_week_event').getValue()
+	, repeat_d = 1
 	, repeat_end = Ext.getCmp('repeat_end').getValue()
 	, repeat_option = Ext.getCmp('repeat_option').getValue()
 	, occurance = Ext.getCmp('occurance').getValue()
@@ -380,6 +381,7 @@ og.EventPopUp.goToEdit = function (){
 			      , occurance_jump: occurance_jump
 			      , repeat_d: repeat_d
 			      , repeat_end: repeat_end
+			      , in_week_event: in_week_event
 			      }), null);
 	this.dialog.hide();	
 }

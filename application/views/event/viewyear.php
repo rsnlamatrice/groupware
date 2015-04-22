@@ -228,7 +228,7 @@ $max_events_to_show = 999;
 	</td>
 	</tr>
 	<tr>
-		<td class="coViewBody user-view-trash-checked" style="padding:0px;height:100%;" colspan=2>
+		<td class="coViewBody user-view-hidembr-checked" style="padding:0px;height:100%;" colspan=2>
 		<div id="chrome_main2" style="width:100%; height:100%">
 		<div id="allDayGridContainer" class="inset grid">
 		<div id="allDayGrid">
@@ -240,7 +240,6 @@ $max_events_to_show = 999;
 			$createEventDrag_args = array();
 			//weeks loop
 			do {	
-				$week = $working_date->format('w');
 				$day_of_week = $working_date->getDayOfWeek();
 				$day_of_month = $working_date->getDay();
 				$strDate = $working_date->format(FORMAT_DATE_KEY);
@@ -285,8 +284,8 @@ $max_events_to_show = 999;
 		
 		<div class="nav-btn nav-toolbar toolbar-left x-tree-arrows">
 			<div class="user-view">
-				<button class="db-ico ico-trash checked">&nbsp;</button>
-				<button class="db-ico ico-refresh">&nbsp;</button>
+				<button class="db-ico ico-user-hide checked">&nbsp;</button>
+				<?php /*<button class="db-ico ico-refresh">&nbsp;</button>*/?>
 			</div>
 			<div class="nav-btn btn-left">
 				<img class="x-tree-elbow-end-minus" src="s.gif"/>
@@ -334,7 +333,7 @@ $max_events_to_show = 999;
 		 echo clean($member->getName());
 	?></div>
 	<div class="member-tools">
-		<button class="ico-trash">&nbsp;</button>
+		<button class="ico-user-hide">&nbsp;</button>
 		<div class="ico-expand">&nbsp;</div>
 	</div>
 </div>
@@ -382,7 +381,8 @@ $max_events_to_show = 999;
 								
 								//weeks loop
 								do {	
-									$week = $working_date->format('w');
+									$week = $working_date->format('W');
+									
 									$date = $working_date;
 									$strDate = $date->format(FORMAT_DATE_KEY);
 									$current_week_left = $dates_left[$strDate];
@@ -525,7 +525,7 @@ $max_events_to_show = 999;
 										$label = 'sem ' . $week;
 									}
 									else
-										$label = $real_start->format('j M');
+										$label = $real_start->format('j') . ' ' . lang($real_start->format('M'));
 									?><span name="w_ev_div_<?php echo $event->getId() . $id_suffix?>_info" style="font-weight:<?php echo $bold ?>;"><?= $label ?></span><?php
 									
 									if(is_a($event, 'ProjectEvent')
@@ -658,22 +658,22 @@ $max_events_to_show = 999;
 		/******************************************************************************************
 		 * 		http://www.hunlock.com/blogs/Totally_Pwn_CSS_with_Javascript 
 		 ******************************************************************************************/
-		function getCSSRule(ruleName, deleteFlag, styleSheet) {               // Return requested style obejct
+		function getCSSRule(ruleName, styleSheet, deleteFlag) {               // Return requested style obejct
 		   if (document.styleSheets) {                            // If browser can play with stylesheets
 			if (styleSheet) {
-				var cssRule=getCSSRuleInStyleSheet(ruleName, deleteFlag, styleSheet);
+				var cssRule=getCSSRuleInStyleSheet(ruleName, styleSheet, deleteFlag);
 				return cssRule;
 			}
 		      for (var i=0; i<document.styleSheets.length; i++) { // For each stylesheet
 			 styleSheet=document.styleSheets[i];          // Get the current Stylesheet
-			 var cssRule=getCSSRuleInStyleSheet(ruleName, deleteFlag, styleSheet)
+			 var cssRule=getCSSRuleInStyleSheet(ruleName, styleSheet, deleteFlag)
 			 if(cssRule) return cssRule;                      // end While loop
 		      }                                                   // end For loop
 		   }                                                      // end styleSheet ability check
 		   return false;                                          // we found NOTHING!
 		}                                                         // end getCSSRule
 		
-		function getCSSRuleInStyleSheet(ruleName, deleteFlag, styleSheet) {               // Return requested style obejct
+		function getCSSRuleInStyleSheet(ruleName, styleSheet, deleteFlag) {               // Return requested style obejct
 			ruleName=getCSSPageRuleName(ruleName.toLowerCase());                       // Convert test string to lower case.
 			var ii=0;                                        // Initialize subCounter.
 			 var cssRule=false;                               // Initialize cssRule. 
@@ -703,12 +703,12 @@ $max_events_to_show = 999;
 		}                                                         // end getCSSRule 
 		
 		function killCSSRule(ruleName, styleSheet) {                          // Delete a CSS rule   
-		   return getCSSRule(ruleName, 'delete', styleSheet);                  // just call getCSSRule w/delete flag.
+		   return getCSSRule(ruleName, styleSheet, 'delete');                  // just call getCSSRule w/delete flag.
 		}                                                         // end killCSSRule
 		
 		function addCSSRule(ruleName, styles, styleSheet) {                           // Create a new css rule
 		   if (document.styleSheets) {                         // Can browser do styleSheets?
-			var cssRule = getCSSRule(ruleName);
+			var cssRule = getCSSRule(ruleName, styleSheet);
 			if (cssRule)	                        	// if rule does exist...
 				return cssRule;
 			if (!styleSheet) {
@@ -934,7 +934,6 @@ $max_events_to_show = 999;
 					}
 				}
 				methods.set_dates_left($('#alldaycelltitle_' + strMonday), expanding);
-				//throw "debug";
 			}, /*chead_expand_onclick*/
 			
 			
@@ -976,7 +975,7 @@ $max_events_to_show = 999;
 					if(strDate.jquery)
 						strDate = methods.get_date(strDate);
 					if(!strDate){
-						throw('date inconnue');
+						console.log('date inconnue');
 						return;
 					}
 					$headers.find('.cell-' + strDate).hide();
@@ -985,7 +984,7 @@ $max_events_to_show = 999;
 					if(strDate.jquery)
 						strDate = methods.get_date(strDate);
 					if(!strDate){
-						throw('date inconnue');
+						console.log('date inconnue');
 						return;
 					}
 					$headers.find('.cell-' + strDate).show();
@@ -1034,8 +1033,8 @@ $max_events_to_show = 999;
 				if (!$dom.jquery)
 					$dom = $($dom);
 				if ($dom.hasClass('coViewBody'))
-					return $dom.hasClass('user-view-trash-checked');
-				return $dom.parents('.coViewBody:first').hasClass('user-view-trash-checked');
+					return $dom.hasClass('user-view-hidembr-checked');
+				return $dom.parents('.coViewBody:first').hasClass('user-view-hidembr-checked');
 				
 			},
 			/* Defines members top style */
@@ -1059,7 +1058,7 @@ $max_events_to_show = 999;
 							before = false;
 							rhead = document.getElementById('rhead' + memberId);
 							isVisible = methods.is_visible(rhead, user_hide_all);
-							if (!isVisible) {//due to toggle_user_view_trash
+							if (!isVisible) {//due to toggle_user_view_hidembr
 								lookingForFirstVisible = true;
 								continue;
 							}
@@ -1081,7 +1080,7 @@ $max_events_to_show = 999;
 					}
 					else
 						rhead = document.getElementById('rhead' + memberId);
-					isVisible = methods.is_visible(rhead);
+					isVisible = methods.is_visible(rhead, user_hide_all);
 					if (!isVisible)
 						continue;
 					if (lookingForFirstVisible){
@@ -1101,7 +1100,6 @@ $max_events_to_show = 999;
 					else
 						top += height;
 				}
-				//throw('ICIC ICI CI ');
 			},
 			
 			/* tree collapse/expand */
@@ -1109,8 +1107,18 @@ $max_events_to_show = 999;
 				//toggle direction
 				var $img = $(this)
 				, $rhead = $img.parents('.rhead:first')
-				, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
 				, expanding = $img[0].className.indexOf('x-tree-elbow-plus') >= 0
+				;
+				methods.set_tree_node_state($rhead, expanding);
+				methods.set_members_top($rhead);
+				methods.saveYearViewUserPreferences();
+			},
+
+			/* tree collapse/expand */
+			set_tree_node_state : function($rhead, expanding){
+				//toggle direction
+				var $img = $rhead.find('.x-tree-elbow-minus:first, .x-tree-elbow-plus:first')
+				, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
 				, max_depth = options.max_depth
 				, $grid = $('#grid')
 				, parentMemberId = $rhead[0].id.substr('rhead'.length)
@@ -1195,8 +1203,6 @@ $max_events_to_show = 999;
 					methods.set_row_height($rhead, false);
 				}
 				methods.set_members_top($rhead);
-				//throw('ICI C ICI CI ');
-				
 			},
 			
 			/* Set row height to see all events */
@@ -1254,7 +1260,6 @@ $max_events_to_show = 999;
 					$rhead.css('height', options.row_height + 'px');
 				}
 				methods.set_members_top($rhead);
-				//throw('IC IIC I CI CI C');
 			},
 			
 			/* Set row height to see all events */
@@ -1263,31 +1268,30 @@ $max_events_to_show = 999;
 				, $rhead = $this.parents('.rhead:first')
 				, expanding = /ico-expand/.test(this.className);
 				methods.set_row_height($rhead, expanding);
-				//throw('IC IIC I CI CI C');
 			}
 			
 			// hides/shows members user choosed to hide
-			, toggle_user_view_trash: function(){
+			, toggle_user_view_hidembr: function(){
 				var checked = /\bchecked\b/.test(this.className);
 				methods.set_user_hide_all(!checked);
 				methods.saveYearViewUserPreferences();
-				throw('ICI C ICI CI ');
+				console.log('toggle_user_view_hidembr');
 			}
 			
 			// hides/shows members user choosed to hide
-			, set_user_hide_all: function(force_hide){
-				var checked = !force_hide
-				, $icon = $('#allDayGridContainer .user-view .ico-trash')
+			, set_user_hide_all: function(set_hide){
+				var checked = !set_hide
+				, $icon = $('#allDayGridContainer .user-view .ico-user-hide')
 				, $grid = $('#grid')
 				, $table = $grid.parents('.coViewBody:first');
 				if(checked){
 					//show all
 					$icon.removeClass('checked');
-					$table.removeClass('user-view-trash-checked');
+					$table.removeClass('user-view-hidembr-checked');
 				} else {
 					//hide checked
 					$icon.addClass('checked');
-					$table.addClass('user-view-trash-checked');
+					$table.addClass('user-view-hidembr-checked');
 				}
 				var $rhead = $table.find('.rhead.user-hide:first');
 				if($rhead.length == 0)
@@ -1296,12 +1300,36 @@ $max_events_to_show = 999;
 					methods.set_members_top($rhead);
 			}
 			
+			// hides/shows member row
+			, toggle_member_row_hidembr: function(){
+				var $this = $(this)
+				, $rhead = $this.parents('.rhead:first')
+				, $table = $rhead.parents('.coViewBody:first')
+				, checked = /\buser-hide\b/.test($rhead[0].className)
+				, user_hide_all = methods.is_user_hide_all($table)
+				;
+				methods.set_member_row_hide($rhead, !checked)
+				if(user_hide_all)
+					methods.set_members_top($table.find('.rhead:first'));
+				methods.saveYearViewUserPreferences();
+			}
+			
+			// hides/shows member row
+			, set_member_row_hide: function($rhead, hidden){
+				if(hidden)
+					$rhead.addClass('user-hide');
+				else 
+					$rhead.removeClass('user-hide');
+				
+				methods.setMemberHiddenStyle($rhead, hidden);
+			}
+			
 			// define css rules to hide members
 			, setMemberHiddenStyle: function($rhead, hidden){
 				
 				var parentMemberId = $rhead[0].id.substr('rhead'.length)
 				, root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
-				, selector = '.user-view-trash-checked [data-member="' + parentMemberId + '"]'
+				, selector = '.user-view-hidembr-checked [data-member="' + parentMemberId + '"]'
 				, styleSheet = getFavoriteStyleSheet();
 				
 				
@@ -1310,7 +1338,7 @@ $max_events_to_show = 999;
 					if(depth <= root_depth)
 						return false;//stop
 					var memberId = this.id.substr('rhead'.length);
-					selector += ', .user-view-trash-checked [data-member="' + memberId + '"]';
+					selector += ',.user-view-hidembr-checked [data-member="' + memberId + '"]';
 				});
 				
 				css_rule = getCSSRule(selector, styleSheet);
@@ -1321,62 +1349,39 @@ $max_events_to_show = 999;
 				if(hidden)
 					css_rule = addCSSRule(selector, 'display: none;', styleSheet);
 			}
-			
-			// hides/shows member row
-			, toggle_member_row_trash: function(){
-				var $this = $(this)
-				, $rhead = $this.parents('.rhead:first')
-				, $table = $this.parents('.coViewBody:first')
-				, checked = /\buser-hide\b/.test($rhead[0].className)
-				, user_hide_all = methods.is_user_hide_all($table);
-				if(checked){
-					$rhead.removeClass('user-hide');
-				} else {
-					$rhead.addClass('user-hide');
-				}
-				checked = !checked;
-				methods.setMemberHiddenStyle($rhead, checked);
-				if(user_hide_all)
-					methods.set_members_top($table.find('.rhead:first'));
-				methods.saveYearViewUserPreferences();
-			}
 		
 			/******************************************************************************************
 			 * 		localstorage 
 			 ******************************************************************************************/
 			, getUserPreferencesKey : function() {
-				var userId = <?php echo logged_user()->getId(); ?>;
-				return "fo-view-year-css-ruled-" + userId;
+				var userId = <?php echo logged_user()->getId(); ?>
+				, rootMbrId = <?php
+					$mbr = active_context_members(false);
+					echo count($mbr) ? array_keys($mbr)[0] : 0; ?>;
+				return "fo-vy-user-" + userId + '-' + rootMbrId;
 			}
 			, loadYearViewUserPreferences : function() {
-				var data = localStorage.getItem(this.getUserPreferencesKey());
+				var data = localStorage.getItem(methods.getUserPreferencesKey());
+				console.log("load " + data);
 				if (!data) 
 					return;
+				data = JSON.parse(data);
 				var $grid = $('#grid')
 				, $table = $grid.parents('.coViewBody:first')
 				, user_hide_all = methods.is_user_hide_all($table)
 				;
 				if (data.hiddenMbr)
 					for(var i = 0; i < data.hiddenMbr.length; i++){
-						methods.setMemberHiddenStyle($("#rhead" + data.hiddenMbr[i]), true);
+						methods.set_member_row_hide($("#rhead" + data.hiddenMbr[i]), true);
 					}
 				if (data.collapsedMbr){
 					for(var i = 0; i < data.collapsedMbr.length; i++){
-						var $rhead = $("#rhead" + data.collapsedMbr[i])
-						, $img = $rhead.find('.x-tree-elbow-minus:first');
-					
-						$img
-							.removeClass('x-tree-elbow-minus')
-							.addClass('x-tree-elbow-plus');
-						$rhead
-							.removeClass('tree-expanded')
-							.addClass('tree-collapsed');
-					}
-					if (data.collapsedMbr.length) {
-						
+						var $rhead = $("#rhead" + data.collapsedMbr[i]);
+						methods.set_tree_node_state($rhead, false);
 					}
 				}
-				methods.toggle_user_view_trash(data.user_hide_all);
+				methods.set_user_hide_all(data.user_hide_all);
+				
 			}
 			, saveYearViewUserPreferences : function() {
 				var data = { 'hiddenMbr' : [], 'collapsedMbr' : []};
@@ -1384,16 +1389,18 @@ $max_events_to_show = 999;
 				, $table = $grid.parents('.coViewBody:first')
 				, user_hide_all = methods.is_user_hide_all($table)
 				, $rheadUserHide = $table.find('.rhead.user-hide')
-				, $nodesCollapsed = $table.find('.rhead.ico-expand')
+				, $nodesCollapsed = $table.find('.rhead.tree-collapsed')
 				;
 				$rheadUserHide.each(function(){
-					data.hiddenMbr.push(this.id.substr('rhead'.length));
+					data.hiddenMbr.push(parseInt(this.id.substr('rhead'.length)));
 				});
 				$nodesCollapsed.each(function(){
-					data.collapsedMbr.push(this.id.substr('rhead'.length));
+					data.collapsedMbr.push(parseInt(this.id.substr('rhead'.length)));
 				});
 				data.user_hide_all = user_hide_all;
-				localStorage.setItem(this.getUserPreferencesKey(), data);
+				localStorage.setItem(methods.getUserPreferencesKey(), JSON.stringify(data));
+				
+				console.log("save : " + JSON.stringify(data));
 			}
 			
 		}
@@ -1431,10 +1438,10 @@ $max_events_to_show = 999;
 		$("#rowheaders .rheadtext .ico-expand").click(methods.toggle_rows_height);
 		$(".nav-btn").click(methods.navigate);
 		$("#rowheaders .x-tree-ec-icon.x-tree-elbow-minus, #rowheaders .x-tree-ec-icon.x-tree-elbow-plus").click(methods.toggle_tree_node);
-		$('.user-view .ico-trash').click(methods.toggle_user_view_trash);
-		$('.member-tools .ico-trash').click(methods.toggle_member_row_trash);
+		$('.user-view .ico-user-hide').click(methods.toggle_user_view_hidembr);
+		$('.member-tools .ico-user-hide').click(methods.toggle_member_row_hidembr);
 		$('.user-view .ico-refresh').click(methods.loadYearViewUserPreferences);
-		//methods.loadYearViewUserPreferences();
+		methods.loadYearViewUserPreferences();
 	})();
 
 	// Top Toolbar	
@@ -1557,7 +1564,18 @@ $max_events_to_show = 999;
 	.rheadtext > .member-tools * {
 		opacity: 0.3;
 	}
-	.rhead.user-hide .rheadtext > .member-tools button.ico-trash {
+	.ico-user-hide {
+		background-image: url(public/assets/themes/default/images/16x16/unlocked.png) !important;
+		background-position: 3px 4px;
+		border: none;
+	}
+	.rhead .ico-user-hide {
+		background-position: 1px 2px;
+	}
+	.ico-user-hide.checked, .rhead.user-hide .ico-user-hide {
+		background-image: url(public/assets/themes/default/images/16x16/locked.png) !important;
+	}
+	.rhead.user-hide .rheadtext > .member-tools button.ico-user-hide {
 		opacity: 1;
 	}
 	.rheadtext > .member-tools > * {
@@ -1759,13 +1777,6 @@ $max_events_to_show = 999;
 	.user-view .db-ico {
 		height: 24px;
 		width: 22px;
-	}
-	.user-view-trash-checked .user-view .ico-trash {
-		border-style: inset;
-	}
-	.rhead.user-hide .member-tools .ico-trash {
-		/*visibility: hidden;*/
-		border-style: inset;
 	}
 	<?php
 	

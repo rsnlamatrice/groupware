@@ -276,7 +276,7 @@ $visible_cps = CustomProperties::countVisibleCustomPropertiesByObjectType($objec
 	$rsel3 = array_var($event_data, 'rsel3'); 
 	$rnum = array_var($event_data, 'rnum'); 
 	$rend = array_var($event_data, 'rend'); ?>
-	<div id="<?php echo $genid ?>event_repeat_options_div" style="display:none">
+	<div id="<?php echo $genid ?>event_repeat_options_div" <?php if(!$event->isRepetitive()) echo 'style="display:none"'; ?>>
 		<fieldset>
 			<legend><?php echo lang('CAL_REPEATING_EVENT')?></legend>
 			<?php

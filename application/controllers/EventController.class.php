@@ -1356,8 +1356,8 @@ class EventController extends ApplicationController {
 	    if ($min == -1) $min = format_date($event->getStart(), 'i', logged_user()->getTimezone() );
 	    
 		if ($event->isRepetitive()) {
-			$orig_date = DateTimeValueLib::dateFromFormatAndString('Y-m-d H:i:s', array_var($_GET, 'orig_date'));
-			$diff = DateTimeValueLib::get_time_difference($orig_date->getTimestamp(), mktime($hour, $min, 0, $month, $day, $year));
+		    $orig_date = DateTimeValueLib::dateFromFormatAndString('Y-m-d H:i:s', array_var($_GET, 'orig_date'));
+		    $diff = DateTimeValueLib::get_time_difference($orig_date->getTimestamp(), mktime($hour, $min, 0, $month, $day, $year));
 		    $new_start = new DateTimeValue($event->getStart()->getTimestamp());
 		    $new_start->add('d', $diff['days']);
 		    $new_start->add('h', $diff['hours']);
@@ -1372,6 +1372,14 @@ class EventController extends ApplicationController {
 		    		$wnum++;
 		    	}
 		    	$event->setRepeatWnum($wnum);
+		    }
+		    
+			/*ED150422*/
+			elseif($event->isInWeekEvent()){	
+				$new_repeatEnd = new DateTimeValue($event->getRepeatEnd()->getTimestamp());
+				$new_repeatEnd->add('d', $diff['days']);
+				$new_repeatEnd->add('h', $diff['hours']);
+				$new_repeatEnd->add('m', $diff['minutes']);
 		    }
 	    } else {
 		    $new_start = new DateTimeValue(mktime($hour, $min, 0, $month, $day, $year) - logged_user()->getTimezone() * 3600);
@@ -1405,7 +1413,10 @@ class EventController extends ApplicationController {
 		}
 		
 	    $event->setStart($new_start->format("Y-m-d H:i:s"));
-	    $event->setDuration($new_duration->format("Y-m-d H:i:s"));
+		/*ED150422*/
+		if(isset($new_repeatEnd))
+		    $event->setRepeatEnd($new_repeatEnd->format("Y-m-d H:i:s"));
+		$event->setDuration($new_duration->format("Y-m-d H:i:s"));
 	    $event->save();
 		
 	    $old_reminders = ObjectReminders::getByObject($event);	    
