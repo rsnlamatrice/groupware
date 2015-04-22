@@ -285,7 +285,7 @@ $max_events_to_show = 999;
 		<div class="nav-btn nav-toolbar toolbar-left x-tree-arrows">
 			<div class="user-view">
 				<button class="db-ico ico-user-hide checked">&nbsp;</button>
-				<?php /*<button class="db-ico ico-refresh">&nbsp;</button>*/?>
+<?php /*			<button class="db-ico ico-refresh">&nbsp;</button>*/?>
 			</div>
 			<div class="nav-btn btn-left">
 				<img class="x-tree-elbow-end-minus" src="s.gif"/>
@@ -607,10 +607,10 @@ $max_events_to_show = 999;
 		}
 		//since I use a specific style sheet with a title="ccs-ruled", this is not needed
 		function getCSSPageRuleName(ruleName) {
-			var genid = '<?php echo $genid."view_calendar.css-ruled"?>';
+			var genid = '';//'#<?php echo $genid."view_calendar.css-ruled"?> ';
 			if (ruleName.indexOf(',') > 0)
-				return '#' + genid + ' ' + ruleName.split(',').join(', #' + genid + ' ');
-			return '#' + genid + ' ' + ruleName;
+				return genid + ruleName.split(',').join(', ' + genid);
+			return genid + ruleName;
 		}
 		//delete all rules containing .css-ruled as selector
 		//since I use a specific style sheet with a title="ccs-ruled", this is not needed
@@ -635,9 +635,6 @@ $max_events_to_show = 999;
 			do {                                             // For each rule in stylesheet
 				//console.log('styleSheet.cssRules ' + i + '/' + ii);
 				cssRule = cssRules[ii];
-				if (ii == 210) {
-					console.log('cssRule.selectorText');
-				}
 				//console.log('styleSheet.cssRules post');
 				if (cssRule && cssRule.selectorText       // If we found a rule...
 				&& cssRule.selectorText.indexOf('.css-ruled')>0) { //  match ruleName?
@@ -1027,7 +1024,7 @@ $max_events_to_show = 999;
 			
 			is_visible : function(dom, user_hide_all){
 				return !/parent-tree-collapsed/.test(dom.className)
-					&& (!user_hide_all || !/user-hide/.test(dom.className));//!/display\s?:\s*none/.test(rhead.getAttribute('style'));
+					&& (!user_hide_all || !/user-hide/.test(dom.className)); //'parent-user-hide' included
 			},
 			is_user_hide_all : function($dom){
 				if (!$dom.jquery)
@@ -1275,7 +1272,7 @@ $max_events_to_show = 999;
 				var checked = /\bchecked\b/.test(this.className);
 				methods.set_user_hide_all(!checked);
 				methods.saveYearViewUserPreferences();
-				console.log('toggle_user_view_hidembr');
+				//console.log('toggle_user_view_hidembr');
 			}
 			
 			// hides/shows members user choosed to hide
@@ -1305,7 +1302,7 @@ $max_events_to_show = 999;
 				var $this = $(this)
 				, $rhead = $this.parents('.rhead:first')
 				, $table = $rhead.parents('.coViewBody:first')
-				, checked = /\buser-hide\b/.test($rhead[0].className)
+				, checked = /(^|\s)user-hide\b/.test($rhead[0].className)
 				, user_hide_all = methods.is_user_hide_all($table)
 				;
 				methods.set_member_row_hide($rhead, !checked)
@@ -1316,11 +1313,34 @@ $max_events_to_show = 999;
 			
 			// hides/shows member row
 			, set_member_row_hide: function($rhead, hidden){
+				if($rhead.length === 0)
+					return;
 				if(hidden)
 					$rhead.addClass('user-hide');
 				else 
 					$rhead.removeClass('user-hide');
-				
+				if(!$rhead.hasClass('parent-user-hide')){ // not itself a child of a user-hide node
+					var root_depth = parseInt($rhead[0].className.replace(/^.*mbr-depth(\d+).*$/, '$1'))
+					, skip_depth = 0;
+					
+					$rhead.nextAll('div.rhead').each(function(){
+						var depth = parseInt(this.className.replace(/^.*mbr-depth(\d+).*$/, '$1'));
+						if(depth <= root_depth)
+							return false; //stop looping
+						if(depth < skip_depth) //itself a child of a user-hide node
+							return; 
+						if(depth == skip_depth) 
+							skip_depth = 0;
+							
+						if(!hidden)
+							this.className = this.className.replace('parent-user-hide', '');
+						else if(this.className.indexOf('parent-user-hide') === -1)
+							this.className += ' parent-user-hide';
+							
+						if(/(^|\s)user-hide/.test(this.className))
+							skip_depth = depth;
+					});
+				}
 				methods.setMemberHiddenStyle($rhead, hidden);
 			}
 			
@@ -1362,7 +1382,7 @@ $max_events_to_show = 999;
 			}
 			, loadYearViewUserPreferences : function() {
 				var data = localStorage.getItem(methods.getUserPreferencesKey());
-				console.log("load " + data);
+				//console.log("load " + data);
 				if (!data) 
 					return;
 				data = JSON.parse(data);
@@ -1371,11 +1391,11 @@ $max_events_to_show = 999;
 				, user_hide_all = methods.is_user_hide_all($table)
 				;
 				if (data.hiddenMbr)
-					for(var i = 0; i < data.hiddenMbr.length; i++){
+					for(var i = data.hiddenMbr.length - 1; i>= 0; i--){
 						methods.set_member_row_hide($("#rhead" + data.hiddenMbr[i]), true);
 					}
 				if (data.collapsedMbr){
-					for(var i = 0; i < data.collapsedMbr.length; i++){
+					for(var i = data.collapsedMbr.length - 1; i>= 0; i--){
 						var $rhead = $("#rhead" + data.collapsedMbr[i]);
 						methods.set_tree_node_state($rhead, false);
 					}
@@ -1400,7 +1420,7 @@ $max_events_to_show = 999;
 				data.user_hide_all = user_hide_all;
 				localStorage.setItem(methods.getUserPreferencesKey(), JSON.stringify(data));
 				
-				console.log("save : " + JSON.stringify(data));
+				//console.log("save : " + JSON.stringify(data));
 			}
 			
 		}
@@ -1564,16 +1584,21 @@ $max_events_to_show = 999;
 	.rheadtext > .member-tools * {
 		opacity: 0.3;
 	}
-	.ico-user-hide {
-		background-image: url(public/assets/themes/default/images/16x16/unlocked.png) !important;
+	.user-view .ico-user-hide {
+		background-image: url(public/assets/themes/default/images/16x16/locked.png);
 		background-position: 3px 4px;
 		border: none;
 	}
-	.rhead .ico-user-hide {
-		background-position: 1px 2px;
+	.user-view .ico-user-hide.checked {
+		background-image: url(public/assets/themes/default/images/16x16/unlocked.png);
 	}
-	.ico-user-hide.checked, .rhead.user-hide .ico-user-hide {
-		background-image: url(public/assets/themes/default/images/16x16/locked.png) !important;
+	.rhead .ico-user-hide {
+		background-image: url(public/assets/themes/default/images/16x16/unlocked.png);
+		background-position: 1px 2px;
+		border: none;
+	}
+	.rhead.user-hide .ico-user-hide {
+		background-image: url(public/assets/themes/default/images/16x16/locked.png);
 	}
 	.rhead.user-hide .rheadtext > .member-tools button.ico-user-hide {
 		opacity: 1;
