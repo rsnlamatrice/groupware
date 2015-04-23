@@ -615,7 +615,7 @@ $max_events_to_show = 999;
 		//delete all rules containing .css-ruled as selector
 		//since I use a specific style sheet with a title="ccs-ruled", this is not needed
 		function clearCSSPageRules() {
-			var styleSheet=getFavoriteStyleSheet() ;		// Get the current Stylesheet
+			var styleSheet=getFavoriteStyleSheet();
 			if (!styleSheet)
 				return;
 			var ii=0					// Initialize subCounter.
@@ -657,6 +657,8 @@ $max_events_to_show = 999;
 		 ******************************************************************************************/
 		function getCSSRule(ruleName, styleSheet, deleteFlag) {               // Return requested style obejct
 		   if (document.styleSheets) {                            // If browser can play with stylesheets
+			if (!styleSheet)
+				styleSheet=getFavoriteStyleSheet();
 			if (styleSheet) {
 				var cssRule=getCSSRuleInStyleSheet(ruleName, styleSheet, deleteFlag);
 				return cssRule;
@@ -705,14 +707,11 @@ $max_events_to_show = 999;
 		
 		function addCSSRule(ruleName, styles, styleSheet) {                           // Create a new css rule
 		   if (document.styleSheets) {                         // Can browser do styleSheets?
+			if (!styleSheet)
+				styleSheet=getFavoriteStyleSheet();
 			var cssRule = getCSSRule(ruleName, styleSheet);
 			if (cssRule)	                        	// if rule does exist...
 				return cssRule;
-			if (!styleSheet) {
-				//var i = 1;//document.styleSheets.length-1;		// 0 can not be used
-				// styleSheet = document.styleSheets[i]; // styleSheet to use.
-				 styleSheet = getFavoriteStyleSheet();
-			}
 			if (styleSheet) {
 				/*if (styleSheet.addRule) {           // Browser is IE?
 				    styleSheet.addRule(ruleName, null,0);      // Yes, add IE style
@@ -1460,8 +1459,8 @@ $max_events_to_show = 999;
 		$("#rowheaders .x-tree-ec-icon.x-tree-elbow-minus, #rowheaders .x-tree-ec-icon.x-tree-elbow-plus").click(methods.toggle_tree_node);
 		$('.user-view .ico-user-hide').click(methods.toggle_user_view_hidembr);
 		$('.member-tools .ico-user-hide').click(methods.toggle_member_row_hidembr);
-		$('.user-view .ico-refresh').click(methods.loadYearViewUserPreferences);
-		methods.loadYearViewUserPreferences();
+		//$('.user-view .ico-refresh').click(methods.loadYearViewUserPreferences);
+		$(document.body).ready(methods.loadYearViewUserPreferences);
 	})();
 
 	// Top Toolbar	
@@ -1588,6 +1587,7 @@ $max_events_to_show = 999;
 		background-image: url(public/assets/themes/default/images/16x16/locked.png);
 		background-position: 3px 4px;
 		border: none;
+		cursor: pointer;
 	}
 	.user-view .ico-user-hide.checked {
 		background-image: url(public/assets/themes/default/images/16x16/unlocked.png);
